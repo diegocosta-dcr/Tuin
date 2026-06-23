@@ -267,6 +267,30 @@ app.put('/api/clientes/:id', async (req, res) => {
   }
 });
 
+// Excluir cliente (protege quem tem histórico de consumo/pagamento)
+app.delete('/api/clientes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const cliente = await dbGet('SELECT * FROM clientes WHERE id = ?', [id]);
+    if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado.' });
+
+    const cons = await dbGet('SELECT COUNT(*) as c FROM consumos WHERE cliente_id = ?', [id]);
+    const pag = await dbGet('SELECT COUNT(*) as c FROM pagamentos WHERE cliente_id = ?', [id]);
+    if (Number(cons.c) > 0 || Number(pag.c) > 0) {
+      return res.status(400).json({ error: 'Este cliente já tem consumos/pagamentos registrados e não pode ser excluído (use Editar). Exclusão é só para cadastros feitos por engano.' });
+    }
+
+    // Remove o cartão vinculado e o cliente
+    await dbRun('DELETE FROM cartoes_nfc WHERE cliente_id = ?', [id]);
+    await dbRun('DELETE FROM clientes WHERE id = ?', [id]);
+    io.emit('clientes_atualizado');
+    io.emit('cartoes_atualizado');
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Recarregar saldo do cliente
 app.post('/api/clientes/:id/recarga', async (req, res) => {
   const { id } = req.params;

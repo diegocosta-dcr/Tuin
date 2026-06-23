@@ -81,7 +81,7 @@ function renderizarClientes(filtro = '') {
     if (filtrados.length === 0) {
         body.innerHTML = `
             <tr>
-                <td colspan="6" class="table-empty">Nenhum cliente correspondente encontrado.</td>
+                <td colspan="7" class="table-empty">Nenhum cliente correspondente encontrado.</td>
             </tr>
         `;
         return;
@@ -106,25 +106,29 @@ function renderizarClientes(filtro = '') {
                <span class="tempo-badge ${nivel !== 'normal' ? nivel : ''}" style="margin-left:0.4rem;">${tempoAberta(aberta.aberta_desde)}</span>`
             : `<span style="color: var(--text-muted);">R$ 0,00</span>`;
 
-        // Marcação de cartão NFC vinculado
+        // Coluna Cartão: check verde se tem cartão vinculado, traço se não
         const temCartao = cartoes.some(card => card.cliente_id === c.id && (card.status === 'ativo' || !card.status));
-        const cartaoBadge = temCartao
-            ? `<span class="cli-cartao ok" title="Cartão NFC vinculado"><i class="fa-solid fa-circle-check"></i> Cartão OK</span>`
-            : `<span class="cli-cartao sem" title="Cliente sem cartão"><i class="fa-solid fa-triangle-exclamation"></i> Sem cartão</span>`;
+        const cartaoCol = temCartao
+            ? '<i class="fa-solid fa-circle-check" style="color:var(--success); font-size:1.1rem;" title="Cartão vinculado"></i>'
+            : '<span style="color:var(--t3);" title="Sem cartão">—</span>';
 
         tr.innerHTML = `
-            <td><strong>${c.nome}</strong><div style="margin-top:0.25rem;">${cartaoBadge}</div></td>
+            <td><strong>${c.nome}</strong></td>
             <td>${c.cpf || '<span style="color: var(--text-muted);">Não informado</span>'}</td>
+            <td style="text-align:center;">${cartaoCol}</td>
             <td>${c.telefone || '<span style="color: var(--text-muted);">—</span>'}</td>
             <td>${abertoHtml}</td>
             <td>${dataCadastro}</td>
             <td>
                 <div style="display:flex; gap:0.4rem;">
-                    <button class="btn btn-secondary btn-sm" onclick="abrirSlideOver(${c.id}, '${nomeEsc}', '${cpfEsc}')">
-                        <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+                    <button class="btn btn-secondary btn-sm" onclick="abrirSlideOver(${c.id}, '${nomeEsc}', '${cpfEsc}')" title="Histórico">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
                     </button>
-                    <button class="btn btn-secondary btn-sm" onclick="abrirModalEditarCliente(${c.id}, '${nomeEsc}', '${emailEsc}', '${cpfEsc}', '${telEsc}')">
-                        <i class="fa-solid fa-pen"></i> Editar
+                    <button class="btn btn-secondary btn-sm" onclick="abrirModalEditarCliente(${c.id}, '${nomeEsc}', '${emailEsc}', '${cpfEsc}', '${telEsc}')" title="Editar">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" style="color:var(--error); border-color:rgba(212,80,80,0.25);" onclick="confirmarExcluirCliente(${c.id}, '${nomeEsc}')" title="Excluir">
+                        <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
             </td>
@@ -325,6 +329,33 @@ socket.on('nfc_lido', async (data) => {
         console.error('NFC error', err);
     }
 });
+
+// ── Excluir cliente (com camada de segurança) ──
+function confirmarExcluirCliente(id, nome) {
+    document.getElementById('excluirClienteId').value = id;
+    document.getElementById('excluirClienteNome').innerText = nome;
+    document.getElementById('modalExcluirCliente').classList.add('active');
+}
+function fecharExcluirCliente() {
+    document.getElementById('modalExcluirCliente').classList.remove('active');
+}
+async function executarExclusaoCliente() {
+    const id = document.getElementById('excluirClienteId').value;
+    const btn = document.getElementById('btnConfirmarExcluir');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(`/api/clientes/${id}`, { method: 'DELETE' });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.error || 'Erro ao excluir cliente.');
+        showToast('Cliente excluído.', 'success');
+        fecharExcluirCliente();
+        await carregarDadosPagina();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
 
 // Captura scan NFC no fluxo de substituição do modal de edição
 async function handleSubstituirNfcLido(uid) {

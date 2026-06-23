@@ -75,6 +75,7 @@
                                 <tr>
                                     <th>Nome</th>
                                     <th>CPF</th>
+                                    <th style="text-align:center;">Cartão</th>
                                     <th>Telefone</th>
                                     <th>Em aberto</th>
                                     <th>Data Cadastro</th>
@@ -83,7 +84,7 @@
                             </thead>
                             <tbody id="clientesTableBody">
                                 <tr>
-                                    <td colspan="6" class="table-empty">Carregando clientes...</td>
+                                    <td colspan="7" class="table-empty">Carregando clientes...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -355,6 +356,29 @@
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Salvar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Excluir Cliente (camada de segurança) -->
+    <div class="modal-overlay" id="modalExcluirCliente">
+        <div class="modal-container" style="width:400px;">
+            <div class="modal-header">
+                <h3 style="color:var(--error);"><i class="fa-solid fa-triangle-exclamation"></i> Excluir cliente</h3>
+                <button class="btn-close-modal" onclick="fecharExcluirCliente()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="excluirClienteId">
+                <p style="font-size:0.92rem; color:var(--t2);">Tem certeza que deseja excluir <strong id="excluirClienteNome" style="color:var(--t1);">-</strong>?</p>
+                <p style="font-size:0.8rem; color:var(--t3); margin-top:0.6rem;">
+                    <i class="fa-solid fa-circle-info"></i> Esta ação não pode ser desfeita. Clientes com consumos ou pagamentos registrados não podem ser excluídos.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="fecharExcluirCliente()">Cancelar</button>
+                <button type="button" class="btn" style="background:var(--error); color:#fff;" id="btnConfirmarExcluir" onclick="executarExclusaoCliente()">
+                    <i class="fa-solid fa-trash"></i> Sim, excluir
+                </button>
+            </div>
         </div>
     </div>
 
