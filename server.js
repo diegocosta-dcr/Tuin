@@ -26,24 +26,54 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// LOGIN / SENHA DE ACESSO (condicional)
+// LOGIN / SENHA DE ACESSO (tela própria do sistema, via cookie)
 // Só protege quando APP_SENHA estiver definida (ex: em produção/nuvem).
 // Localmente, sem APP_SENHA, o sistema continua aberto para testes.
 // ==========================================
 const APP_SENHA = process.env.APP_SENHA;
 const APP_USUARIO = process.env.APP_USUARIO || 'admin';
 if (APP_SENHA) {
-  app.use((req, res, next) => {
-    const auth = req.headers.authorization || '';
-    const [tipo, cred] = auth.split(' ');
-    if (tipo === 'Basic' && cred) {
-      const [user, pass] = Buffer.from(cred, 'base64').toString().split(':');
-      if (user === APP_USUARIO && pass === APP_SENHA) return next();
+  const crypto = require('crypto');
+  // Token determinístico (stateless): muda se usuário/senha mudarem.
+  const TOKEN = crypto.createHash('sha256').update(`${APP_USUARIO}:${APP_SENHA}:tuin`).digest('hex');
+
+  const lerCookie = (req, nome) => {
+    const raw = req.headers.cookie || '';
+    const item = raw.split(';').map(s => s.trim()).find(s => s.startsWith(nome + '='));
+    return item ? decodeURIComponent(item.split('=').slice(1).join('=')) : null;
+  };
+
+  // Página de login (própria do sistema)
+  app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+
+  // Autenticação
+  app.post('/api/login', (req, res) => {
+    const { usuario, senha } = req.body || {};
+    if (usuario === APP_USUARIO && senha === APP_SENHA) {
+      res.cookie('tuin_auth', TOKEN, {
+        httpOnly: true, sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dias
+      });
+      return res.json({ ok: true });
     }
-    res.set('WWW-Authenticate', 'Basic realm="Your Beer - Acesso restrito"');
-    return res.status(401).send('Acesso restrito. Informe usuário e senha.');
+    return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
   });
-  console.log('🔒 Proteção por senha ATIVADA (APP_SENHA definida).');
+
+  app.post('/api/logout', (req, res) => {
+    res.clearCookie('tuin_auth');
+    res.json({ ok: true });
+  });
+
+  // Proteção: libera o fluxo de login e os assets; exige cookie no resto.
+  app.use((req, res, next) => {
+    const p = req.path;
+    if (p === '/login' || p === '/api/login' || p === '/api/logout') return next();
+    if (/\.(css|js|png|jpe?g|svg|ico|gif|webp|woff2?|ttf|map)$/i.test(p)) return next();
+    if (lerCookie(req, 'tuin_auth') === TOKEN) return next();
+    if (p.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado.' });
+    return res.redirect('/login');
+  });
+  console.log('🔒 Login por senha ATIVADO (tela própria).');
 }
 
 app.use(express.static(path.join(__dirname, 'public')));

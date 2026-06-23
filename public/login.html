@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer — Entrar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <link rel="stylesheet" href="/shared.css">
+    <style>
+        body {
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(201,168,76,0.08), transparent 60%),
+                var(--bg);
+        }
+        .login-card {
+            width: 380px; max-width: 92%;
+            background: var(--card);
+            border: 1px solid var(--gold-border);
+            border-radius: 18px;
+            padding: 2.2rem 2rem;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+        .login-logo { max-height: 54px; max-width: 180px; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.95; margin-bottom: 0.4rem; }
+        .login-sub {
+            font-size: 0.6rem; font-weight: 800; color: var(--gold);
+            text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.6;
+            margin-bottom: 1.8rem;
+        }
+        .login-card .form-group { text-align: left; margin-bottom: 1rem; }
+        .login-card label { margin-bottom: 0.35rem; display: block; }
+        .input-icon { position: relative; }
+        .input-icon i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--t3); font-size: 0.85rem; }
+        .input-icon .input-control { padding-left: 2.3rem; }
+        .btn-entrar { width: 100%; margin-top: 0.6rem; padding: 0.8rem; font-size: 0.95rem; }
+        .login-erro {
+            display: none;
+            background: rgba(212,80,80,0.1);
+            border: 1px solid rgba(212,80,80,0.3);
+            color: var(--error);
+            font-size: 0.8rem; font-weight: 600;
+            padding: 0.6rem 0.8rem; border-radius: 9px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <img src="/your_beer_logo.png" alt="Your Beer" class="login-logo">
+        <div class="login-sub">Comanda Digital</div>
+
+        <div class="login-erro" id="erroLogin"></div>
+
+        <form id="formLogin">
+            <div class="form-group">
+                <label for="usuario">Usuário</label>
+                <div class="input-icon">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="usuario" class="input-control" placeholder="seu usuário" autocomplete="username" autofocus required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="senha">Senha</label>
+                <div class="input-icon">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="senha" class="input-control" placeholder="sua senha" autocomplete="current-password" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-entrar" id="btnEntrar">
+                <i class="fa-solid fa-right-to-bracket"></i> Entrar
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('formLogin');
+        const erro = document.getElementById('erroLogin');
+        const btn = document.getElementById('btnEntrar');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            erro.style.display = 'none';
+            btn.disabled = true;
+            const usuario = document.getElementById('usuario').value.trim();
+            const senha = document.getElementById('senha').value;
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, senha })
+                });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(d.error || 'Falha ao entrar.');
+                window.location.href = '/';
+            } catch (err) {
+                erro.textContent = err.message;
+                erro.style.display = 'block';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
