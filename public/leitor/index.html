@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Leitor NFC (Ambiente de Testes)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <link rel="stylesheet" href="/leitor/style.css?v=2">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer" class="brand-logo-img"></div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+                <div class="menu-category">Simulação</div>
+                <a href="/leitor/" class="menu-item active"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Leitor NFC — Ambiente de Testes</div>
+                <div class="topbar-actions">
+                    <div id="statusBadge" class="badge-status"><span class="status-dot"></span> Online</div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="leitor-aviso">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Ambiente virtual para simular o cartão NFC. Deixe a tela de
+                    <a href="/atendente/" target="_blank">Atendimento</a> aberta em outra aba:
+                    ao "encostar" um cartão aqui, a comanda do cliente abre lá automaticamente.
+                </div>
+
+                <div class="leitor-grid">
+                    <!-- Leitor visual -->
+                    <section class="card leitor-device">
+                        <div class="leitor-reader" id="leitorReader">
+                            <div class="reader-rings"><span></span><span></span><span></span></div>
+                            <i class="fa-solid fa-wifi reader-icon"></i>
+                            <div class="reader-text" id="readerText">Aguardando cartão...</div>
+                        </div>
+
+                        <div class="leitor-manual">
+                            <label for="uidManual">UID manual</label>
+                            <div class="manual-row">
+                                <input type="text" id="uidManual" class="input-control" placeholder="Ex: NFC123456">
+                                <button class="btn btn-secondary" id="btnUidManual"><i class="fa-solid fa-hand-pointer"></i> Encostar</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Cartões cadastrados -->
+                    <section class="card">
+                        <div class="leitor-secao-titulo"><i class="fa-solid fa-id-card text-gold"></i> Cartões cadastrados</div>
+                        <p class="leitor-secao-sub">Clique para simular a aproximação do cartão.</p>
+                        <div class="cartoes-grid" id="cartoesGrid">
+                            <div class="lista-vazia">Carregando cartões...</div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Ferramentas de teste -->
+                <section class="card leitor-ferramentas">
+                    <div class="leitor-secao-titulo"><i class="fa-solid fa-flask text-gold"></i> Ferramentas de teste</div>
+                    <p class="leitor-secao-sub">Crie uma comanda e simule o tempo decorrido para ver as cores (12h amarelo · 48h vermelho).</p>
+
+                    <div class="ferramenta-row">
+                        <select id="selectClienteTeste" class="input-control"></select>
+                    </div>
+                    <div class="ferramenta-botoes">
+                        <button class="btn btn-secondary" id="btnComandaTeste"><i class="fa-solid fa-mug-hot"></i> Lançar consumo de teste</button>
+                        <button class="btn btn-secondary" id="btnEnvelhecer13"><i class="fa-solid fa-hourglass-half"></i> Envelhecer 13h (amarelo)</button>
+                        <button class="btn btn-secondary" id="btnEnvelhecer50"><i class="fa-solid fa-hourglass-end"></i> Envelhecer 50h (vermelho)</button>
+                        <button class="btn btn-secondary" id="btnEnvelhecer0"><i class="fa-solid fa-rotate-left"></i> Voltar ao normal</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="/shared.js?v=2"></script>
+    <script src="/leitor/app.js"></script>
+</body>
+</html>

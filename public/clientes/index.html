@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Gerenciamento de Clientes</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <!-- Page Specific Styles -->
+    <link rel="stylesheet" href="/clientes/style.css?v=2">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <img src="/your_beer_logo.png" alt="Your Beer Logo" class="brand-logo-img">
+                </div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item active"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+                <div class="menu-category">Simulação</div>
+                <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Clientes Cadastrados</div>
+                <div class="topbar-actions">
+                    <button id="btnTopCadastrar" class="btn btn-primary">
+                        <i class="fa-solid fa-user-plus"></i> Cadastrar Cliente
+                    </button>
+                    <div id="statusBadge" class="badge-status">
+                        <span class="status-dot"></span> Online
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="card" style="margin-bottom: 1.2rem; padding: 1rem;">
+                    <div style="display: flex; gap: 0.8rem; align-items: center;">
+                        <i class="fa-solid fa-magnifying-glass text-gold" style="font-size: 1.1rem;"></i>
+                        <input type="text" id="buscarClientesInput" class="input-control" placeholder="Buscar por nome, CPF ou aproximar cartão..." style="border: none; padding: 0.5rem 0.2rem; background: transparent;">
+                    </div>
+                </div>
+
+                <!-- Clientes Grid -->
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CPF</th>
+                                    <th>Telefone</th>
+                                    <th>Em aberto</th>
+                                    <th>Data Cadastro</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientesTableBody">
+                                <tr>
+                                    <td colspan="6" class="table-empty">Carregando clientes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Slide-over Panel (Histórico) -->
+        <div id="clientSlideOver" class="slideover-container">
+            <div class="slideover-header">
+                <div>
+                    <h3 id="soClienteNome">Nome do Cliente</h3>
+                    <p id="soClienteCPF" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem;">CPF: -</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="so-balance-badge">
+                        Em aberto: <strong id="soClienteSaldo">R$ 0,00</strong>
+                    </div>
+                    <button class="btn-close-slideover" onclick="fecharSlideOver()">&times;</button>
+                </div>
+            </div>
+            <div class="slideover-body">
+                <!-- Navigation Tabs inside Slideover -->
+                <div class="slideover-tabs">
+                    <button class="so-tab-btn active" onclick="switchSlideOverTab('consumo')">
+                        <i class="fa-solid fa-beer-mug-empty"></i> Em aberto
+                    </button>
+                    <button class="so-tab-btn" onclick="switchSlideOverTab('recarga')">
+                        <i class="fa-solid fa-money-bill-transfer"></i> Pagamentos
+                    </button>
+                    <button class="so-tab-btn" onclick="switchSlideOverTab('cartoes')">
+                        <i class="fa-solid fa-address-card"></i> Cartões
+                    </button>
+                </div>
+
+                <!-- Consumos Tab Content -->
+                <div id="soTabConsumo" class="so-tab-content active">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Copo</th>
+                                    <th>Valor</th>
+                                    <th>Chopp</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="soConsumosBody">
+                                <tr>
+                                    <td colspan="4" class="table-empty">Nenhum consumo.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recargas Tab Content -->
+                <div id="soTabRecarga" class="so-tab-content">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Valor</th>
+                                    <th>Método</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="soRecargasBody">
+                                <tr>
+                                    <td colspan="3" class="table-empty">Nenhuma recarga.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Cartões Tab Content -->
+                <div id="soTabCartoes" class="so-tab-content">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Via</th>
+                                    <th>UID do Cartão</th>
+                                    <th>Status</th>
+                                    <th>Data Cadastro</th>
+                                </tr>
+                            </thead>
+                            <tbody id="soCartoesBody">
+                                <tr>
+                                    <td colspan="4" class="table-empty">Nenhum cartão.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Globais -->
+    <!-- Modal Recarga -->
+    <div class="modal-overlay" id="modalRecarga">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Recarga de Saldo</h3>
+                <button class="btn-close-modal">&times;</button>
+            </div>
+            <form id="formRecargaModal">
+                <div class="modal-body">
+                    <div class="nfc-zone">
+                        <div class="nfc-icon-wrapper">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                        </div>
+                        <div class="nfc-text" id="recargaNfcStatus">Aproxime o cartão NFC...</div>
+                    </div>
+                    
+                    <div class="nfc-card-detected" id="recargaCardInfo">
+                        <p>Cliente: <strong id="recargaClienteNome">-</strong></p>
+                        <p>Saldo Atual: <strong id="recargaClienteSaldo">R$ 0,00</strong></p>
+                        <input type="hidden" id="recargaClienteId">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="valorRecargaInput">Valor da Recarga (R$)</label>
+                        <input type="number" id="valorRecargaInput" class="input-control" step="0.01" min="1" placeholder="Ex: 50.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-cancelar-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Recarga</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Cadastro Cliente -->
+    <div class="modal-overlay" id="modalCadastro">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Novo Cliente & Vínculo NFC</h3>
+                <button class="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="nfc-zone">
+                    <div class="nfc-icon-wrapper">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                    </div>
+                    <div class="nfc-text" id="cadastroNfcStatus">Aproxime o cartão NFC...</div>
+                </div>
+
+                <div id="cadastroPerfilInfo" style="display: none;" class="nfc-card-detected">
+                    <p>Cliente já cadastrado: <strong id="cadastroPerfilNome">-</strong></p>
+                    <p>Saldo atual: <strong id="cadastroPerfilSaldo">R$ 0,00</strong></p>
+                    <form id="formRecargaCadastro" style="margin-top: 0.8rem;">
+                        <input type="hidden" id="cadastroPerfilId">
+                        <input type="hidden" id="cadastroPerfilUid">
+                        <div class="form-group">
+                            <label for="valorRecargaCadastroInput">Recarga Rápida (R$)</label>
+                            <input type="number" id="valorRecargaCadastroInput" class="input-control" step="0.01" min="1" placeholder="Ex: 20.00" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Recarregar e Fechar</button>
+                    </form>
+                </div>
+
+                <form id="formCadastroModal" style="display: none;">
+                    <input type="hidden" id="cadastroNfcUid">
+                    <div class="form-group">
+                        <label for="nomeClienteInput">Nome Completo</label>
+                        <input type="text" id="nomeClienteInput" class="input-control" placeholder="Nome do cliente" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cpfClienteInput">CPF (opcional)</label>
+                        <input type="text" id="cpfClienteInput" class="input-control" placeholder="000.000.000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="telClienteInput">Telefone (opcional)</label>
+                        <input type="text" id="telClienteInput" class="input-control" placeholder="(00) 00000-0000">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem;">
+                        <button type="button" class="btn btn-secondary btn-cancelar-modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Cadastrar e Vincular</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Cliente -->
+    <div class="modal-overlay" id="modalEditarCliente">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Editar Cliente</h3>
+                <button class="btn-close-modal" onclick="fecharModalEditarCliente()">&times;</button>
+            </div>
+            <form id="formEditarCliente">
+                <div class="modal-body">
+                    <input type="hidden" id="editarClienteId">
+                    <div class="form-group">
+                        <label for="editarClienteNome">Nome Completo *</label>
+                        <input type="text" id="editarClienteNome" class="input-control" placeholder="Nome do cliente" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editarClienteEmail">E-mail</label>
+                        <input type="email" id="editarClienteEmail" class="input-control" placeholder="email@exemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="editarClienteCpf">CPF</label>
+                        <input type="text" id="editarClienteCpf" class="input-control" placeholder="000.000.000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="editarClienteTelefone">Telefone</label>
+                        <input type="text" id="editarClienteTelefone" class="input-control" placeholder="(00) 00000-0000">
+                    </div>
+
+                    <!-- NFC Card Management Section -->
+                    <div style="margin-top: 1.2rem; padding-top: 1.2rem; border-top: 1px solid var(--sidebar-border);">
+                        <label style="font-size: 0.65rem; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 0.6rem;">Cartão NFC Associado</label>
+                        
+                        <div id="editarCartaoInfo" class="nfc-card-detected" style="margin-bottom: 0.8rem; padding: 0.8rem; background: var(--card-2); border: 1px solid var(--sidebar-border); border-radius: 8px;">
+                            Carregando informações do cartão...
+                        </div>
+                        
+                        <!-- Botão de substituição -->
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnSubstituirCartao" style="width: 100%;">
+                            <i class="fa-solid fa-exchange-alt"></i> Substituir Cartão (2ª Via)
+                        </button>
+                        
+                        <!-- Zona NFC para nova via -->
+                        <div id="secaoSubstituirNfc" style="display: none; margin-top: 0.8rem;">
+                            <div class="nfc-zone" style="padding: 1rem; margin-bottom: 0.8rem; background: var(--input-bg); border: 1px dashed var(--border-color);">
+                                <div class="nfc-icon-wrapper" style="width: 36px; height: 36px; font-size: 1rem;">
+                                    <i class="fa-solid fa-tower-broadcast"></i>
+                                </div>
+                                <div class="nfc-text" id="substituirNfcStatus" style="font-size: 0.8rem;">Aproxime o novo cartão NFC...</div>
+                            </div>
+                            
+                            <input type="hidden" id="substituirNfcUid">
+                            
+                            <!-- Escolha de cobrança da 2ª via -->
+                            <div id="substituirPagamentoArea" style="display: none; padding: 0.8rem; border-radius: 8px; background: rgba(201,168,76,0.07); border: 1px solid var(--gold-border);">
+                                <div style="font-size: 0.82rem; margin-bottom: 0.6rem; color: var(--t2); display: flex; align-items: center; gap: 0.4rem;">
+                                    <i class="fa-solid fa-id-card text-gold"></i>
+                                    <span>Este cliente já tinha cartão. Esta nova via vai ser <strong>cobrada</strong>?</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem;">
+                                    <button type="button" id="btnViaCortesia" class="btn btn-secondary btn-sm via-opt active" style="flex: 1;">
+                                        <i class="fa-solid fa-gift"></i> Cortesia (grátis)
+                                    </button>
+                                    <button type="button" id="btnViaCobrar" class="btn btn-secondary btn-sm via-opt" style="flex: 1;">
+                                        <i class="fa-solid fa-dollar-sign"></i> Cobrar <strong id="substituirPrecoTexto">R$ 10,00</strong>
+                                    </button>
+                                </div>
+                                <div class="form-group" id="substituirMetodoWrap" style="display: none; margin-bottom: 0;">
+                                    <label for="substituirMetodoPagamento" style="font-size: 0.72rem;">Forma de Pagamento</label>
+                                    <select id="substituirMetodoPagamento" class="input-control" style="font-size: 0.8rem; padding: 0.35rem 0.6rem;">
+                                        <option value="PIX">PIX</option>
+                                        <option value="Cartao">Cartão de Crédito/Débito</option>
+                                        <option value="Dinheiro">Dinheiro</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="fecharModalEditarCliente()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/shared.js?v=2"></script>
+    <script src="/clientes/app.js"></script>
+</body>
+</html>

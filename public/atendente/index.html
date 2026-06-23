@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Atendimento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <link rel="stylesheet" href="/atendente/style.css?v=2">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer" class="brand-logo-img"></div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item active"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+                <div class="menu-category">Simulação</div>
+                <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Atendimento</div>
+                <div class="topbar-actions">
+                    <div id="statusBadge" class="badge-status">
+                        <span class="status-dot"></span> Online
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- Campo de busca grande -->
+                <div class="busca-card">
+                    <i class="fa-solid fa-magnifying-glass busca-icon"></i>
+                    <input type="text" id="buscaInput" class="busca-input"
+                           placeholder="Buscar cliente por nome ou CPF..." autocomplete="off">
+                    <div class="busca-info" id="buscaInfo"></div>
+                </div>
+
+                <!-- Grid de clientes -->
+                <div class="clientes-grid" id="clientesGrid">
+                    <div class="grid-vazio">Carregando clientes...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Comanda (grande) -->
+    <div class="modal-overlay" id="modalComanda">
+        <div class="modal-container modal-comanda">
+            <div class="modal-header">
+                <div class="comanda-head">
+                    <h3 id="comandaNome">Cliente</h3>
+                    <p class="comanda-head-sub">
+                        <span id="comandaTelefone"><i class="fa-solid fa-phone"></i> —</span>
+                        <span id="comandaCpf"><i class="fa-solid fa-id-card"></i> —</span>
+                    </p>
+                </div>
+                <button class="btn-close-modal" id="btnFecharComanda" type="button">&times;</button>
+            </div>
+
+            <div class="modal-body comanda-body">
+                <!-- Destaque do total em aberto -->
+                <div class="total-aberto" id="comandaTotalCard">
+                    <div>
+                        <span class="total-aberto-label">Total em aberto</span>
+                        <span class="total-aberto-valor" id="comandaTotal">R$ 0,00</span>
+                    </div>
+                    <span class="tempo-badge" id="comandaTempo" style="display:none;"></span>
+                </div>
+
+                <!-- Itens lançados na comanda -->
+                <div class="comanda-secao">
+                    <div class="secao-titulo"><i class="fa-solid fa-receipt"></i> Itens da comanda</div>
+                    <div class="comanda-itens" id="comandaItens">
+                        <div class="lista-vazia">Nenhum item lançado ainda.</div>
+                    </div>
+                </div>
+
+                <!-- Torneiras ativas (lançar chopp) -->
+                <div class="comanda-secao">
+                    <div class="secao-titulo"><i class="fa-solid fa-beer-mug-empty"></i> Lançar chopp</div>
+                    <div class="torneiras-grid" id="torneirasGrid">
+                        <div class="lista-vazia">Carregando torneiras...</div>
+                    </div>
+                </div>
+
+                <!-- Histórico de chopps já consumidos (pagos) -->
+                <div class="comanda-secao">
+                    <div class="secao-titulo"><i class="fa-solid fa-clock-rotate-left"></i> Histórico de chopps</div>
+                    <div class="comanda-historico" id="comandaHistorico">
+                        <div class="lista-vazia">Sem histórico de consumo.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-block btn-lg" id="btnFecharComandaRodape">
+                    <i class="fa-solid fa-check"></i> Pronto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/shared.js?v=2"></script>
+    <script src="/atendente/app.js"></script>
+</body>
+</html>

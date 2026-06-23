@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Caixa</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <!-- Page Specific Styles -->
+    <link rel="stylesheet" href="/caixa/style.css?v=2">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer" class="brand-logo-img"></div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item active"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+                <div class="menu-category">Simulação</div>
+                <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Caixa</div>
+                <div class="topbar-actions">
+                    <button id="btnRecarregarLista" class="btn btn-secondary">
+                        <i class="fa-solid fa-rotate"></i> Atualizar
+                    </button>
+                    <div id="statusBadge" class="badge-status">
+                        <span class="status-dot"></span> Online
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="caixa-nfc-aviso">
+                    <i class="fa-solid fa-wifi"></i>
+                    <span><strong>Aproxime o cartão</strong> do cliente no leitor para abrir o pagamento — ou clique numa comanda da lista.</span>
+                </div>
+
+                <!-- KPIs -->
+                <div class="kpi-grid">
+                    <div class="card kpi-card kpi-receber">
+                        <div class="kpi-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Em aberto (a receber)</span>
+                            <span class="kpi-value" id="kpiTotalAberto">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-receipt"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Comandas abertas</span>
+                            <span class="kpi-value" id="kpiQtdAberto">0</span>
+                        </div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-address-card"></i></div>
+                        <div class="kpi-info" style="width: 100%;">
+                            <span class="kpi-label">Custo da 2ª Via</span>
+                            <form id="formConfigSegundaVia" style="display: flex; gap: 0.4rem; margin-top: 0.2rem; align-items: center; width: 100%;">
+                                <span style="font-size: 1.1rem; font-weight: 700; color: var(--text-normal);">R$</span>
+                                <input type="number" id="inputSegundaViaValor" class="input-control" step="0.01" min="0" placeholder="10.00" style="padding: 0.2rem 0.5rem; font-size: 1rem; font-weight: 700; width: 75px; margin-bottom: 0;">
+                                <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.6rem; height: auto;"><i class="fa-solid fa-floppy-disk"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de comandas em aberto -->
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h3 class="section-title"><i class="fa-solid fa-cash-register text-gold"></i> Comandas em Aberto</h3>
+                    <div class="table-wrapper" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>CPF / Telefone</th>
+                                    <th>Itens</th>
+                                    <th>Aberta desde</th>
+                                    <th>Total devendo</th>
+                                    <th style="text-align: right;">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comandasTableBody">
+                                <tr>
+                                    <td colspan="6" class="table-empty">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Histórico de pagamentos -->
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h3 class="section-title"><i class="fa-solid fa-clock-rotate-left text-gold"></i> Histórico de Pagamentos</h3>
+                    <div class="table-wrapper" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Método</th>
+                                    <th>Data / Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pagamentosTableBody">
+                                <tr>
+                                    <td colspan="4" class="table-empty">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Receber Pagamento -->
+    <div class="modal-overlay" id="modalPagamento">
+        <div class="modal-container" style="width: 480px;">
+            <div class="modal-header">
+                <h3>Receber Pagamento</h3>
+                <button class="btn-close-modal" id="btnFecharModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="pag-cliente">
+                    <span class="pag-cliente-label">Cliente</span>
+                    <span class="pag-cliente-nome" id="pagClienteNome">-</span>
+                </div>
+
+                <div class="pag-itens-wrap">
+                    <span class="pag-itens-titulo">Itens em aberto</span>
+                    <div class="table-wrapper">
+                        <table class="pag-itens-table">
+                            <thead>
+                                <tr>
+                                    <th>Chopp</th>
+                                    <th>Torn.</th>
+                                    <th>Tam.</th>
+                                    <th style="text-align: right;">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pagItensBody">
+                                <tr><td colspan="4" class="table-empty">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pag-total">
+                    <span class="pag-total-label">Total a receber</span>
+                    <span class="pag-total-valor" id="pagTotalValor">R$ 0,00</span>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.2rem;">
+                    <label>Método de pagamento</label>
+                    <div class="metodo-grid" id="metodoGrid">
+                        <button type="button" class="metodo-btn active" data-metodo="PIX">
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>PIX</span>
+                        </button>
+                        <button type="button" class="metodo-btn" data-metodo="Cartao">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>Cartão</span>
+                        </button>
+                        <button type="button" class="metodo-btn" data-metodo="Dinheiro">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span>Dinheiro</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelarPagamento">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarPagamento">
+                    <i class="fa-solid fa-check"></i> Confirmar pagamento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/shared.js?v=2"></script>
+    <script src="/caixa/app.js"></script>
+</body>
+</html>

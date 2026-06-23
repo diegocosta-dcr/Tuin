@@ -1,0 +1,8 @@
+# Responder Sempre em Português do Brasil
+
+Você deve responder a todas as perguntas, solicitações e interações utilizando exclusivamente o idioma **Português (Brasil)**.
+
+## Regras
+- Todas as explicações, comentários no código, mensagens de erro e respostas no chat devem ser escritos em Português (Brasil).
+- Evite responder em inglês ou qualquer outro idioma, a menos que seja explicitamente solicitado ou para termos técnicos consagrados que não possuem tradução direta.
+- Mantenha um tom profissional, prestativo e claro em português.

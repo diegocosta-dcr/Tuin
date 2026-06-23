@@ -1,0 +1,273 @@
+/* ============================================================
+   TUIN Your Beer — Caixa (estilos específicos da página)
+   Reutiliza tokens e componentes do /shared.css.
+   ============================================================ */
+
+/* ── Título de seção (reusado nas duas tabelas) ── */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+/* ══════════════════════════════════════════
+   KPIs
+   ══════════════════════════════════════════ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.kpi-icon {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  color: var(--gold);
+  background: var(--gold-a08);
+  border: 1px solid var(--gold-border);
+}
+
+.kpi-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.kpi-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.kpi-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--t1);
+  letter-spacing: -0.01em;
+}
+
+/* destaque dourado para o "a receber" */
+.kpi-receber .kpi-value { color: var(--gold-light); }
+.kpi-receber .kpi-icon {
+  color: var(--gold-light);
+  background: var(--gold-a12);
+  border-color: var(--gold-a22);
+}
+
+/* ══════════════════════════════════════════
+   LISTA DE COMANDAS
+   ══════════════════════════════════════════ */
+/* linha clicável */
+#comandasTableBody tr {
+  cursor: pointer;
+}
+
+.cli-nome {
+  font-weight: 700;
+  color: var(--t1);
+}
+
+.cli-doc {
+  font-size: 0.78rem;
+  color: var(--t2);
+}
+
+.cli-doc small {
+  display: block;
+  color: var(--t3);
+  font-size: 0.72rem;
+}
+
+.badge-itens {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--gold-a08);
+  border: 1px solid var(--gold-border);
+  color: var(--gold);
+  padding: 0.18rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.col-total {
+  font-weight: 800;
+  color: var(--gold-light);
+  font-size: 0.92rem;
+}
+
+.col-tempo {
+  font-size: 0.78rem;
+  color: var(--t2);
+}
+
+.cell-acao { text-align: right; white-space: nowrap; }
+
+.btn-receber {
+  padding: 0.42rem 0.95rem;
+  font-size: 0.78rem;
+}
+
+/* ══════════════════════════════════════════
+   MODAL DE PAGAMENTO
+   ══════════════════════════════════════════ */
+.pag-cliente {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1.1rem;
+}
+.pag-cliente-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+.pag-cliente-nome {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+.pag-itens-wrap { margin-bottom: 1.1rem; }
+.pag-itens-titulo {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.5rem;
+}
+
+.pag-itens-table {
+  font-size: 0.78rem;
+}
+.pag-itens-table thead th {
+  background: var(--table-header-bg);
+}
+/* limita altura da lista de itens com scroll interno */
+.pag-itens-wrap .table-wrapper {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 9px;
+}
+
+/* total em destaque */
+.pag-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--gold-a08);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--r);
+  padding: 0.9rem 1.1rem;
+}
+.pag-total-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.pag-total-valor {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gold-light);
+}
+
+/* ── Botões de método de pagamento ── */
+.metodo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+
+.metodo-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.4rem;
+  border-radius: 11px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--t2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.metodo-btn i { font-size: 1.2rem; color: var(--t3); transition: color 0.18s ease; }
+
+.metodo-btn:hover {
+  border-color: rgba(201,168,76,0.3);
+  color: var(--t1);
+}
+
+.metodo-btn.active {
+  border-color: var(--gold);
+  background: var(--gold-a12);
+  color: var(--gold-light);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+}
+.metodo-btn.active i { color: var(--gold-light); }
+
+/* ── Badge de método na tabela de histórico ── */
+.badge-metodo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--card-2);
+  border: 1px solid var(--sidebar-border);
+  color: var(--t2);
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVIDADE
+   ══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+}
+
+/* Aviso de aproximar cartão NFC */
+.caixa-nfc-aviso {
+    background: rgba(201,168,76,0.07);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--r);
+    padding: 0.85rem 1.1rem;
+    font-size: 0.82rem;
+    color: var(--t2);
+    margin-bottom: 1.4rem;
+    display: flex; align-items: center; gap: 0.6rem;
+}
+.caixa-nfc-aviso i { color: var(--gold); font-size: 1rem; }
+.caixa-nfc-aviso strong { color: var(--gold); }

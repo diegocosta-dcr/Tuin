@@ -1,0 +1,22 @@
+# Dependências
+node_modules/
+
+# Banco local (em produção usamos Postgres/Supabase)
+tuin.db
+tuin.db-journal
+*.sqlite
+*.sqlite3
+
+# Variáveis de ambiente (segredos — NUNCA versionar)
+.env
+.env.local
+
+# Binários/temporários
+cloudflared.exe
+*.log
+scratch/
+backup_layout/
+
+# SO
+.DS_Store
+Thumbs.db

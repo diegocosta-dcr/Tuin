@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Relatórios</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <!-- Page Specific Styles -->
+    <link rel="stylesheet" href="/relatorios/style.css?v=2">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+<aside class="sidebar">
+  <div class="brand-section">
+    <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer Logo" class="brand-logo-img"></div>
+    <div class="brand-sub">Comanda Digital</div>
+  </div>
+  <nav class="menu-section">
+    <div class="menu-category">Atendimento</div>
+    <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+    <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+    <div class="menu-category">Cadastros</div>
+    <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+    <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+    <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+    <div class="menu-category">Gestão</div>
+    <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+    <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+    <a href="/relatorios/" class="menu-item active"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+    <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+    <div class="menu-category">Simulação</div>
+    <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+  </nav>
+</aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Relatórios de Consumo</div>
+                <div class="topbar-actions">
+                    <button id="btnTopCadastrar" class="btn btn-secondary">
+                        <i class="fa-solid fa-user-plus"></i> Cadastrar Cliente
+                    </button>
+                    <div id="statusBadge" class="badge-status">
+                        <span class="status-dot"></span> Online
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- Chart Wrapper and Stats Grid -->
+                <div class="reports-grid">
+                    <!-- Chart Section -->
+                    <div class="card chart-card">
+                        <h3 class="section-title"><i class="fa-solid fa-chart-column text-gold"></i> Copos servidos por Torneira</h3>
+                        <div class="chart-container">
+                            <canvas id="chartConsumo"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Stats table of taps -->
+                    <div class="card table-card">
+                        <h3 class="section-title"><i class="fa-solid fa-table text-gold"></i> Detalhamento por Torneira</h3>
+                        <div class="table-wrapper" style="margin-top: 1rem;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Torneira</th>
+                                        <th>Chopp Conectado</th>
+                                        <th>Copos servidos</th>
+                                        <th>Faturamento</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tapsStatsBody">
+                                    <tr>
+                                        <td colspan="4" class="table-empty">Carregando dados...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals Globais -->
+    <!-- Modal Recarga -->
+    <div class="modal-overlay" id="modalRecarga">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Recarga de Saldo</h3>
+                <button class="btn-close-modal">&times;</button>
+            </div>
+            <form id="formRecargaModal">
+                <div class="modal-body">
+                    <div class="nfc-zone">
+                        <div class="nfc-icon-wrapper">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                        </div>
+                        <div class="nfc-text" id="recargaNfcStatus">Aproxime o cartão NFC...</div>
+                    </div>
+                    
+                    <div class="nfc-card-detected" id="recargaCardInfo">
+                        <p>Cliente: <strong id="recargaClienteNome">-</strong></p>
+                        <p>Saldo Atual: <strong id="recargaClienteSaldo">R$ 0,00</strong></p>
+                        <input type="hidden" id="recargaClienteId">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="valorRecargaInput">Valor da Recarga (R$)</label>
+                        <input type="number" id="valorRecargaInput" class="input-control" step="0.01" min="1" placeholder="Ex: 50.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-cancelar-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Recarga</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Cadastro Cliente -->
+    <div class="modal-overlay" id="modalCadastro">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Novo Cliente & Vínculo NFC</h3>
+                <button class="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="nfc-zone">
+                    <div class="nfc-icon-wrapper">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                    </div>
+                    <div class="nfc-text" id="cadastroNfcStatus">Aproxime o cartão NFC...</div>
+                </div>
+
+                <div id="cadastroPerfilInfo" style="display: none;" class="nfc-card-detected">
+                    <p>Cliente já cadastrado: <strong id="cadastroPerfilNome">-</strong></p>
+                    <p>Saldo atual: <strong id="cadastroPerfilSaldo">R$ 0,00</strong></p>
+                    <form id="formRecargaCadastro" style="margin-top: 0.8rem;">
+                        <input type="hidden" id="cadastroPerfilId">
+                        <input type="hidden" id="cadastroPerfilUid">
+                        <div class="form-group">
+                            <label for="valorRecargaCadastroInput">Recarga Rápida (R$)</label>
+                            <input type="number" id="valorRecargaCadastroInput" class="input-control" step="0.01" min="1" placeholder="Ex: 20.00" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Recarregar e Fechar</button>
+                    </form>
+                </div>
+
+                <form id="formCadastroModal" style="display: none;">
+                    <input type="hidden" id="cadastroNfcUid">
+                    <div class="form-group">
+                        <label for="nomeClienteInput">Nome Completo</label>
+                        <input type="text" id="nomeClienteInput" class="input-control" placeholder="Nome do cliente" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cpfClienteInput">CPF (opcional)</label>
+                        <input type="text" id="cpfClienteInput" class="input-control" placeholder="000.000.000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="telClienteInput">Telefone (opcional)</label>
+                        <input type="text" id="telClienteInput" class="input-control" placeholder="(00) 00000-0000">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem;">
+                        <button type="button" class="btn btn-secondary btn-cancelar-modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Cadastrar e Vincular</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/shared.js?v=2"></script>
+    <script src="/relatorios/app.js"></script>
+</body>
+</html>

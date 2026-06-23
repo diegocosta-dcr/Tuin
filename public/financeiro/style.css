@@ -1,0 +1,235 @@
+/* Financeiro Page CSS */
+.kpi-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+    background: var(--card);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--r);
+    padding: 1.3rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.22s ease;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    opacity: 0.6;
+    border-radius: 3px 3px 0 0;
+}
+
+.kpi-card::after {
+    content: '';
+    position: absolute;
+    top: -20px; right: -20px;
+    width: 80px; height: 80px;
+    background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.kpi-card:hover {
+    border-color: var(--gold-border);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 1;
+}
+
+.kpi-title {
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.kpi-icon {
+    font-size: 1.1rem;
+    z-index: 1;
+}
+
+.kpi-icon.text-gold  { color: var(--gold); }
+.kpi-icon.text-green { color: var(--success); }
+.kpi-icon.text-muted { color: var(--t3); }
+
+.kpi-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--t1);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    z-index: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.finance-tables-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.2rem;
+    align-items: start;
+}
+
+.table-section { padding: 1.2rem; }
+
+.section-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--t1);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.table-empty {
+    text-align: center;
+    color: var(--t3);
+    font-style: italic;
+    padding: 2rem 0;
+    font-size: 0.82rem;
+}
+
+/* ===== Novas seções: Margem, Markup e Calculadora ===== */
+.finance-block { padding: 1.3rem 1.5rem; margin-bottom: 1.5rem; }
+
+.finance-note {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: var(--t3);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+/* Margem e Lucro */
+.margem-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+.margem-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.9rem 1rem;
+    background: var(--gold-a07);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--r);
+}
+
+.margem-label {
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.margem-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--t1);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.margem-value.text-green { color: var(--success); }
+.margem-value.text-gold  { color: var(--gold); }
+
+/* Layout markup + calculadora */
+.finance-calc-grid {
+    display: grid;
+    grid-template-columns: 0.8fr 1.6fr;
+    gap: 1.2rem;
+    align-items: start;
+    margin-bottom: 1.5rem;
+}
+
+.finance-calc-grid .finance-block { margin-bottom: 0; }
+
+.markup-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: stretch;
+}
+
+.markup-row .input-control { flex: 1; }
+
+/* Calculadora */
+.calc-inputs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.calc-results {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.calc-result-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.1rem;
+    background: var(--gold-a07);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--r);
+}
+
+.calc-result-wide { grid-column: 1 / -1; }
+
+.calc-result-title {
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.calc-result-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.calc-result-value.text-gold  { color: var(--gold); }
+.calc-result-value.text-green { color: var(--success); }
+
+.calc-result-sub {
+    font-size: 0.72rem;
+    color: var(--t2);
+}
+
+.calc-result-sub strong { color: var(--t1); }
+
+@media (max-width: 1024px) {
+    .kpi-container { grid-template-columns: repeat(2, 1fr); }
+    .finance-tables-grid { grid-template-columns: 1fr; }
+    .margem-grid { grid-template-columns: repeat(2, 1fr); }
+    .finance-calc-grid { grid-template-columns: 1fr; }
+    .calc-inputs { grid-template-columns: 1fr; }
+    .calc-results { grid-template-columns: 1fr; }
+}

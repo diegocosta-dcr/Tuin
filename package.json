@@ -1,0 +1,22 @@
+{
+  "name": "tuin-chopp-selfservice",
+  "version": "1.0.0",
+  "description": "Sistema de autoatendimento de chopp via cartão NFC",
+  "main": "server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "tunnel": "npx cloudflared tunnel --url http://localhost:3000"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "pg": "^8.22.0",
+    "socket.io": "^4.7.5",
+    "sqlite3": "^5.1.7"
+  }
+}

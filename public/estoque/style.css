@@ -1,0 +1,115 @@
+/* ============================================================
+   Estoque de Barris — usa o design system /shared.css
+   ============================================================ */
+
+.estoque-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.6rem;
+}
+.kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.1rem 1.3rem;
+}
+.kpi-ic {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(201,168,76,0.12);
+    border: 1px solid var(--gold-border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold-light); font-size: 1.15rem; flex-shrink: 0;
+}
+.kpi-card > div { display: flex; flex-direction: column; }
+.kpi-lbl { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--t3); }
+.kpi-val { font-size: 1.5rem; font-weight: 800; color: var(--t1); letter-spacing: -0.02em; }
+
+.estoque-secao-titulo {
+    font-size: 0.9rem; font-weight: 700; color: var(--t1);
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-bottom: 0.9rem;
+}
+
+.barris-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.barril-card {
+    background: var(--card);
+    border: 1px solid rgba(201,168,76,0.1);
+    border-radius: var(--r);
+    padding: 1.1rem;
+    display: flex; flex-direction: column; gap: 0.7rem;
+}
+.barril-card.em-uso {
+    border-left: 3px solid var(--success);
+    background: linear-gradient(90deg, rgba(76,175,125,0.05) 0%, var(--card) 35%);
+}
+
+.barril-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.barril-torneira {
+    font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--success);
+    background: rgba(76,175,125,0.1); border: 1px solid rgba(76,175,125,0.2);
+    padding: 0.2rem 0.55rem; border-radius: 20px;
+}
+.barril-chopp { font-size: 1rem; font-weight: 700; color: var(--t1); }
+.barril-custo { font-size: 0.82rem; font-weight: 600; color: var(--gold); }
+.barril-marca {
+    display: inline-block; align-self: flex-start;
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--t2);
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    padding: 0.18rem 0.5rem; border-radius: 6px;
+    margin-top: -0.15rem;
+}
+
+/* Barra de volume */
+.vol-bar {
+    height: 8px; border-radius: 5px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+}
+.vol-fill { height: 100%; border-radius: 5px; transition: width 0.3s ease; }
+.vol-txt {
+    display: flex; justify-content: space-between;
+    font-size: 0.74rem; color: var(--t2); font-weight: 600;
+}
+
+.barril-acoes { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
+.barril-acoes .btn-sm { padding: 0.4rem 0.7rem; font-size: 0.74rem; }
+.barril-acoes .btn-primary.btn-sm { flex: 1; }
+
+.btn-vazio {
+    background: rgba(212,80,80,0.1);
+    border: 1px solid rgba(212,80,80,0.25);
+    color: var(--error);
+}
+.btn-vazio:hover { background: rgba(212,80,80,0.2); }
+
+.btn-del-barril {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--t3);
+}
+.btn-del-barril:hover { color: var(--error); border-color: rgba(212,80,80,0.35); }
+
+.lista-vazia {
+    grid-column: 1 / -1;
+    text-align: center; color: var(--t3); font-style: italic;
+    padding: 1.6rem 0; font-size: 0.85rem;
+}
+
+.montar-info { font-size: 0.9rem; color: var(--t2); margin-bottom: 1rem; }
+.montar-aviso { font-size: 0.76rem; color: var(--t3); margin-top: 0.6rem; display: flex; gap: 0.4rem; align-items: center; }
+.montar-aviso i { color: var(--gold); }
+
+@media (max-width: 900px) {
+    .estoque-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+    .estoque-kpis { grid-template-columns: 1fr; }
+}

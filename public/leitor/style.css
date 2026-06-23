@@ -1,0 +1,136 @@
+/* ============================================================
+   Leitor NFC — Ambiente de Testes
+   Usa o design system /shared.css. Aqui só o específico.
+   ============================================================ */
+
+.leitor-aviso {
+    background: rgba(201,168,76,0.07);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--r);
+    padding: 0.85rem 1.1rem;
+    font-size: 0.82rem;
+    color: var(--t2);
+    margin-bottom: 1.4rem;
+    display: flex; align-items: center; gap: 0.6rem;
+}
+.leitor-aviso i { color: var(--gold); }
+.leitor-aviso a { color: var(--gold); font-weight: 600; }
+
+.leitor-grid {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 1.4rem;
+    margin-bottom: 1.4rem;
+}
+
+/* ── Leitor visual ── */
+.leitor-device { display: flex; flex-direction: column; gap: 1.2rem; }
+
+.leitor-reader {
+    position: relative;
+    height: 240px;
+    border-radius: 16px;
+    background: radial-gradient(circle at 50% 45%, var(--card-2) 0%, var(--bg) 70%);
+    border: 1px solid var(--gold-border);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0.8rem; overflow: hidden;
+}
+
+.reader-icon {
+    font-size: 3.4rem;
+    color: var(--gold);
+    z-index: 2;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.reader-text {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--t2);
+    z-index: 2;
+}
+
+.reader-rings span {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 80px; height: 80px;
+    border: 2px solid var(--gold-border);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0;
+    animation: reader-ping 2.6s ease-out infinite;
+}
+.reader-rings span:nth-child(2) { animation-delay: 0.8s; }
+.reader-rings span:nth-child(3) { animation-delay: 1.6s; }
+
+@keyframes reader-ping {
+    0%   { transform: translate(-50%,-50%) scale(0.4); opacity: 0.7; }
+    100% { transform: translate(-50%,-50%) scale(2.4); opacity: 0; }
+}
+
+/* Estado "lendo" (cartão encostado) */
+.leitor-reader.lendo {
+    background: radial-gradient(circle at 50% 45%, var(--card) 0%, var(--bg-alt) 70%);
+    border-color: var(--success);
+}
+.leitor-reader.lendo .reader-icon { color: var(--success); transform: scale(1.2); }
+.leitor-reader.lendo .reader-text { color: var(--success); }
+
+.leitor-manual label {
+    display: block; margin-bottom: 0.4rem;
+    font-size: 0.67rem; font-weight: 700;
+    color: var(--t3); text-transform: uppercase; letter-spacing: 0.09em;
+}
+.manual-row { display: flex; gap: 0.5rem; }
+.manual-row .input-control { flex: 1; }
+
+/* ── Seções ── */
+.leitor-secao-titulo {
+    font-size: 0.95rem; font-weight: 700; color: var(--t1);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.leitor-secao-sub { font-size: 0.78rem; color: var(--t3); margin: 0.25rem 0 1rem; }
+
+/* ── Cartões cadastrados ── */
+.cartoes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.8rem;
+}
+
+.cartao-nfc {
+    background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
+    border: 1px solid var(--gold-border);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.16s ease;
+}
+.cartao-nfc:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+.cartao-chip {
+    width: 38px; height: 38px; border-radius: 8px;
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold-light); font-size: 1rem; flex-shrink: 0;
+}
+.cartao-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.cartao-nome { font-size: 0.86rem; font-weight: 700; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cartao-uid { font-size: 0.72rem; color: var(--t3); font-family: monospace; }
+.cartao-acao { color: var(--t3); font-size: 0.85rem; }
+
+/* ── Ferramentas de teste ── */
+.leitor-ferramentas .ferramenta-row { margin-bottom: 0.8rem; max-width: 360px; }
+.ferramenta-botoes { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+/* Responsivo */
+@media (max-width: 860px) {
+    .leitor-grid { grid-template-columns: 1fr; }
+}

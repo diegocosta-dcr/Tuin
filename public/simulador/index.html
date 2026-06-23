@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer — Simulador NFC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+<div class="sim-app">
+
+    <!-- Header -->
+    <header class="sim-header">
+        <div class="sim-header-left">
+            <a href="/" class="sim-back-btn">
+                <i class="fa-solid fa-chevron-left"></i>
+            </a>
+            <div class="sim-brand">
+                <i class="fa-solid fa-microchip"></i>
+                <span>Simulador de Hardware NFC</span>
+            </div>
+        </div>
+        <div class="sim-header-right">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">Conectando...</span>
+        </div>
+    </header>
+
+    <!-- Layout: Panel + Machine -->
+    <div class="sim-layout">
+
+        <!-- LEFT: Control Panel -->
+        <aside class="sim-panel">
+
+            <div class="panel-section">
+                <div class="panel-section-title">
+                    <i class="fa-solid fa-sliders"></i> Configuração
+                </div>
+                <div class="panel-field">
+                    <label>Torneira Simulada</label>
+                    <select id="selectTorneira"></select>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-section-title">
+                    <i class="fa-solid fa-tower-broadcast"></i> Cartão NFC
+                </div>
+                <div class="panel-field">
+                    <label>Cartões Cadastrados</label>
+                    <select id="selectCartaoPredefinido">
+                        <option value="">Selecione um cartão...</option>
+                    </select>
+                </div>
+                <div class="panel-field">
+                    <label>UID Manual</label>
+                    <input type="text" id="inputUidCustom" placeholder="Ex: NFC123456">
+                </div>
+                <button id="btnAproximarNfc" class="sim-btn-amber">
+                    <i class="fa-solid fa-tower-broadcast"></i>
+                    Aproximar Cartão
+                </button>
+            </div>
+
+            <div class="panel-section panel-terminal">
+                <div class="panel-section-title">
+                    <span><i class="fa-solid fa-terminal"></i> Console</span>
+                    <button id="btnClearLogs" class="btn-icon-clear" title="Limpar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                <div class="terminal-logs" id="terminalLogs">
+                    <div class="log-line text-muted">[SYSTEM] Simulador iniciado.</div>
+                    <div class="log-line text-muted">[SYSTEM] Aguardando conexão...</div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- RIGHT: Machine -->
+        <main class="sim-machine">
+
+            <!-- Valve Status Bar -->
+            <div class="machine-status-bar">
+                <div class="valve-indicator">
+                    <div class="valve-led led-yellow" id="valveLed"></div>
+                    <div class="valve-info">
+                        <span class="valve-label">Válvula Solenóide</span>
+                        <span class="valve-status" id="valveStatusText">AGUARDANDO CARTÃO</span>
+                    </div>
+                </div>
+                <div class="hw-badge">
+                    <i class="fa-solid fa-microchip"></i>
+                    TUIN-HW v2.0
+                </div>
+            </div>
+
+            <!-- Machine Body: LCD + Pour side by side -->
+            <div class="machine-body">
+
+                <!-- LCD Display -->
+                <div class="lcd-display">
+                    <div class="lcd-top-bar">
+                        <span id="lcdTitle">TUIN CHOPP SELF-SERVICE</span>
+                        <span class="lcd-pulse-dot" id="lcdPulse"></span>
+                    </div>
+
+                    <div class="lcd-content">
+
+                        <!-- Estado: Aguardando -->
+                        <div id="lcdStateAguardando" class="lcd-state active">
+                            <div class="lcd-wait-icon">
+                                <i class="fa-solid fa-tower-broadcast"></i>
+                            </div>
+                            <div class="lcd-wait-text">APROXIME O CARTÃO</div>
+                            <div class="lcd-wait-sub">PARA INICIAR O CONSUMO</div>
+                        </div>
+
+                        <!-- Estado: Liberado / Servindo -->
+                        <div id="lcdStateLiberado" class="lcd-state">
+                            <div class="lcd-row-info">
+                                <div class="lcd-info-block">
+                                    <span class="lcd-lbl">CLIENTE</span>
+                                    <span class="lcd-val" id="lcdClienteNome">—</span>
+                                </div>
+                                <div class="lcd-info-block">
+                                    <span class="lcd-lbl">CHOPP</span>
+                                    <span class="lcd-val" id="lcdChoppNome">—</span>
+                                </div>
+                            </div>
+                            <div class="lcd-metrics-row">
+                                <div class="lcd-metric">
+                                    <span class="lcd-metric-lbl">VOLUME</span>
+                                    <span class="lcd-metric-val" id="lcdVolume">0.0 <span class="unit">ml</span></span>
+                                </div>
+                                <div class="lcd-divider"></div>
+                                <div class="lcd-metric">
+                                    <span class="lcd-metric-lbl">CUSTO</span>
+                                    <span class="lcd-metric-val" id="lcdCusto">R$ 0.00</span>
+                                </div>
+                            </div>
+                            <div class="lcd-saldo-row">
+                                <span class="lcd-saldo-lbl">SALDO RESTANTE</span>
+                                <span class="lcd-saldo-val" id="lcdSaldoCliente">R$ 0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Estado: Erro / Negado -->
+                        <div id="lcdStateErro" class="lcd-state">
+                            <div class="lcd-error-icon">
+                                <i class="fa-solid fa-circle-xmark"></i>
+                            </div>
+                            <div class="lcd-error-title">ACESSO NEGADO</div>
+                            <div class="lcd-error-msg" id="lcdErrorMsg">SALDO INSUFICIENTE</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Pour Visualization -->
+                <div class="pour-section">
+                    <div class="pour-stage pouring-area">
+                        <div class="tap-nozzle" id="tapNozzleEl">
+                            <div class="tap-handle" id="tapHandle"></div>
+                            <div class="beer-stream" id="beerStream"></div>
+                        </div>
+                        <div class="glass-wrap">
+                            <div class="glass-cup">
+                                <div class="beer-liquid" id="beerLiquid"></div>
+                                <div class="beer-foam" id="beerFoam"></div>
+                            </div>
+                            <div class="glass-foot"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Controls -->
+            <div class="machine-controls">
+                <button id="btnServirChopp" class="ctrl-btn ctrl-serve" disabled>
+                    <i class="fa-solid fa-beer-mug-empty"></i>
+                    <span>Mantenha Pressionado para Servir</span>
+                </button>
+                <button id="btnFecharTorneira" class="ctrl-btn ctrl-stop" disabled>
+                    <i class="fa-solid fa-circle-stop"></i>
+                    <span>Finalizar Consumo</span>
+                </button>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>

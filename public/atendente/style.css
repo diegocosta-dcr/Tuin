@@ -1,0 +1,378 @@
+/* ============================================================
+   Atendimento — TUIN Your Beer (Comanda Digital)
+   Usa o design system de /shared.css. Aqui só o específico:
+   busca grande, grid de clientes, modal grande da comanda,
+   cards de torneira com 2 botões e destaque do total.
+   ============================================================ */
+
+/* ── Campo de busca grande ── */
+.busca-card {
+    background: var(--card);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--r);
+    padding: 0.9rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-bottom: 1.4rem;
+    flex-wrap: wrap;
+}
+
+.busca-icon {
+    color: var(--gold);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.busca-input {
+    flex: 1;
+    min-width: 200px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--t1);
+    font-size: 1.05rem;
+    font-weight: 500;
+    padding: 0.4rem 0;
+}
+.busca-input::placeholder { color: var(--t3); }
+
+.busca-info {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--t3);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* ── Grid de clientes ── */
+.clientes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.grid-vazio {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--t3);
+    font-style: italic;
+    padding: 3rem 0;
+    font-size: 0.9rem;
+}
+
+.cliente-card {
+    background: var(--card);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--r);
+    padding: 1.1rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+.cliente-card:hover {
+    border-color: var(--gold-border);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Card com comanda em aberto: destaque dourado à esquerda */
+.cliente-card.tem-aberto {
+    border-left: 3px solid var(--gold);
+    background: linear-gradient(90deg, var(--gold-a07) 0%, var(--card) 30%);
+}
+
+.cliente-card-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cliente-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold);
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.cliente-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.cliente-card-nome {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--t1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cliente-card-sub {
+    font-size: 0.74rem;
+    color: var(--t3);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.cliente-card-sub i { font-size: 0.7rem; }
+.cliente-card-sem { font-style: italic; }
+
+.cliente-card-bottom {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.cliente-card-valor {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+}
+.cliente-card-valor.zero { color: var(--t3); font-weight: 600; }
+
+.cliente-card-status {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gold-light);
+}
+.cliente-card-status.livre { color: var(--t3); }
+
+/* ════════════════════════════════════════════
+   MODAL GRANDE DA COMANDA
+   ════════════════════════════════════════════ */
+.modal-comanda {
+    width: 720px;
+    max-width: 95%;
+}
+
+.comanda-body {
+    max-height: 72vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201,168,76,0.18) transparent;
+}
+.comanda-body::-webkit-scrollbar { width: 5px; }
+.comanda-body::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.18); border-radius: 4px; }
+
+/* Cabeçalho do cliente */
+.comanda-head h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--t1);
+}
+.comanda-head-sub {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.3rem;
+    font-size: 0.78rem;
+    color: var(--t2);
+}
+.comanda-head-sub i { color: var(--gold); margin-right: 0.3rem; font-size: 0.72rem; }
+
+/* Destaque do total em aberto */
+.total-aberto {
+    background: linear-gradient(135deg, var(--gold-a12), var(--gold-a07));
+    border: 1px solid var(--gold-border);
+    border-radius: 14px;
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+.total-aberto-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold-light);
+}
+.total-aberto-valor {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+/* Seções */
+.comanda-secao { margin-bottom: 1.4rem; }
+.comanda-secao:last-child { margin-bottom: 0; }
+
+.secao-titulo {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--t3);
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.8rem;
+}
+.secao-titulo i { color: var(--gold); }
+
+.lista-vazia {
+    text-align: center;
+    color: var(--t3);
+    font-style: italic;
+    padding: 1.2rem 0;
+    font-size: 0.82rem;
+}
+
+/* Itens lançados */
+.comanda-itens {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.item-linha {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card-2);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 10px;
+    padding: 0.7rem 0.95rem;
+}
+
+.item-info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.item-nome { font-size: 0.88rem; font-weight: 600; color: var(--t1); }
+.item-detalhe {
+    font-size: 0.72rem;
+    color: var(--t3);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.item-detalhe i { color: var(--gold); opacity: 0.7; }
+
+.item-acoes { display: flex; align-items: center; gap: 0.9rem; flex-shrink: 0; }
+.item-valor { font-size: 0.92rem; font-weight: 700; color: var(--gold); }
+
+.btn-lixeira {
+    background: rgba(212,80,80,0.08);
+    border: 1px solid rgba(212,80,80,0.18);
+    color: var(--error);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    transition: all 0.16s ease;
+}
+.btn-lixeira:hover {
+    background: rgba(212,80,80,0.2);
+    border-color: rgba(212,80,80,0.4);
+}
+
+/* ── Cards de torneira (lançar chopp) ── */
+.torneiras-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.8rem;
+}
+
+.torneira-card {
+    background: var(--card-2);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 12px;
+    padding: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.torneira-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+.torneira-num {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--gold);
+    color: var(--sidebar-active-text);
+    font-size: 0.82rem;
+    font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.torneira-nome {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--t1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.torneira-botoes {
+    display: grid;
+    /* Acomoda 2 ou 3 botões (300ml, 500ml e Growler 1L): quebra em nova linha
+       quando o card não comporta os três lado a lado. */
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 0.5rem;
+}
+
+.btn-copo {
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+    border-radius: 9px;
+    padding: 0.6rem 0.4rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    transition: all 0.16s cubic-bezier(0.16,1,0.3,1);
+}
+.btn-copo:hover:not(:disabled) {
+    background: var(--gold);
+    border-color: var(--gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(201,168,76,0.3);
+}
+.btn-copo:hover:not(:disabled) .copo-tam,
+.btn-copo:hover:not(:disabled) .copo-preco { color: var(--sidebar-active-text); }
+
+.copo-tam {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--t2);
+}
+.copo-preco {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--gold);
+}
+
+.btn-copo:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* ── Responsivo ── */
+@media (max-width: 560px) {
+    .total-aberto-valor { font-size: 1.7rem; }
+    .torneiras-grid { grid-template-columns: 1fr; }
+    .clientes-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,57 @@
+/* Estornos Page CSS */
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.2rem;
+}
+
+.table-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2.5rem 0;
+}
+
+.client-results-box {
+    max-height: 150px;
+    overflow-y: auto;
+    background-color: #0F0F0F;
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    border-radius: 6px;
+    padding: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.client-results-box::-webkit-scrollbar {
+    width: 4px;
+}
+
+.client-results-box::-webkit-scrollbar-thumb {
+    background-color: rgba(201, 168, 76, 0.15);
+    border-radius: 4px;
+}
+
+.client-result-item {
+    padding: 0.5rem 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.client-result-item:hover {
+    background-color: rgba(201, 168, 76, 0.08);
+    color: var(--primary);
+}
+
+.client-result-item span.cpf {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}

@@ -1,0 +1,37 @@
+/* Relatórios Page CSS */
+.reports-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.chart-card {
+    padding: 1.5rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 320px;
+    width: 100%;
+}
+
+.table-card {
+    padding: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.table-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2rem 0;
+}

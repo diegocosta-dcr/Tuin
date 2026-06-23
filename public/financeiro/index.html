@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Financeiro</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <!-- Page Specific Styles -->
+    <link rel="stylesheet" href="/financeiro/style.css?v=2">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+  <div class="brand-section">
+    <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer Logo" class="brand-logo-img"></div>
+    <div class="brand-sub">Comanda Digital</div>
+  </div>
+  <nav class="menu-section">
+    <div class="menu-category">Atendimento</div>
+    <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+    <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+    <div class="menu-category">Cadastros</div>
+    <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+    <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+    <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+    <div class="menu-category">Gestão</div>
+    <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+    <a href="/financeiro/" class="menu-item active"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+    <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+    <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+    <div class="menu-category">Simulação</div>
+    <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+  </nav>
+</aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Financeiro</div>
+                <div class="topbar-actions">
+                    <button id="btnTopCadastrar" class="btn btn-secondary">
+                        <i class="fa-solid fa-user-plus"></i> Cadastrar Cliente
+                    </button>
+                    <div id="statusBadge" class="badge-status">
+                        <span class="status-dot"></span> Online
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- KPIs Section (Only here!) -->
+                <div class="kpi-container">
+                    <div class="card kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Recebido (Total)</span>
+                            <i class="fa-solid fa-sack-dollar kpi-icon text-green"></i>
+                        </div>
+                        <div class="kpi-value" id="kpiRecebidoTotal">R$ 0,00</div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Recebido Hoje</span>
+                            <i class="fa-solid fa-coins kpi-icon text-gold"></i>
+                        </div>
+                        <div class="kpi-value" id="kpiRecebidoHoje">R$ 0,00</div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Em Aberto (A Receber)</span>
+                            <i class="fa-solid fa-hourglass-half kpi-icon text-gold"></i>
+                        </div>
+                        <div class="kpi-value" id="kpiEmAberto">R$ 0,00</div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Clientes Cadastrados</span>
+                            <i class="fa-solid fa-users kpi-icon text-muted"></i>
+                        </div>
+                        <div class="kpi-value" id="kpiClientes">0</div>
+                    </div>
+                </div>
+
+                <!-- Margem e Lucro (bruto) -->
+                <div class="card finance-block">
+                    <h3 class="section-title"><i class="fa-solid fa-chart-pie text-gold"></i> Margem e Lucro (bruto)</h3>
+                    <div class="margem-grid">
+                        <div class="margem-item">
+                            <span class="margem-label">Receita (comandas)</span>
+                            <span class="margem-value text-green" id="mlReceitaComandas">R$ 0,00</span>
+                        </div>
+                        <div class="margem-item">
+                            <span class="margem-label">Custo da mercadoria (CMV)</span>
+                            <span class="margem-value" id="mlCmv">R$ 0,00</span>
+                        </div>
+                        <div class="margem-item">
+                            <span class="margem-label">Lucro bruto</span>
+                            <span class="margem-value text-green" id="mlLucroBruto">R$ 0,00</span>
+                        </div>
+                        <div class="margem-item">
+                            <span class="margem-label">Margem</span>
+                            <span class="margem-value text-gold" id="mlMargemPct">0,0%</span>
+                        </div>
+                        <div class="margem-item">
+                            <span class="margem-label">Capital em estoque</span>
+                            <span class="margem-value" id="mlInvestidoEstoque">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <p class="finance-note"><i class="fa-solid fa-circle-info"></i> O lucro real (com custos operacionais) será adicionado depois.</p>
+                </div>
+
+                <!-- Markup global + Calculadora de Precificação -->
+                <div class="finance-calc-grid">
+                    <!-- Configurações -->
+                    <div class="card finance-block">
+                        <h3 class="section-title"><i class="fa-solid fa-gear text-gold"></i> Configurações</h3>
+                        <div class="form-group">
+                            <label for="markupPadraoInput">Markup padrão (%)</label>
+                            <div class="markup-row">
+                                <input type="number" id="markupPadraoInput" class="input-control" step="0.1" min="0" placeholder="Ex: 200">
+                                <button type="button" id="btnSalvarMarkup" class="btn btn-success">
+                                    <i class="fa-solid fa-floppy-disk"></i> Salvar
+                                </button>
+                            </div>
+                            <p class="finance-note" style="margin-top:0.4rem;"><i class="fa-solid fa-circle-info"></i> Só uma calculadora de sugestão; não altera preços automaticamente.</p>
+                        </div>
+                        <div class="form-group" style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--sidebar-border);">
+                            <label for="valorSegundaViaInput">Valor da 2ª via do cartão (R$)</label>
+                            <div class="markup-row">
+                                <input type="number" id="valorSegundaViaInput" class="input-control" step="0.01" min="0" placeholder="Ex: 15,00">
+                                <button type="button" id="btnSalvarSegundaVia" class="btn btn-success">
+                                    <i class="fa-solid fa-floppy-disk"></i> Salvar
+                                </button>
+                            </div>
+                            <p class="finance-note" style="margin-top:0.4rem;"><i class="fa-solid fa-circle-info"></i> Valor usado quando o atendente cobra a 2ª via de um cartão.</p>
+                        </div>
+                    </div>
+
+                    <!-- Calculadora de Precificação -->
+                    <div class="card finance-block">
+                        <h3 class="section-title"><i class="fa-solid fa-calculator text-gold"></i> Calculadora de Precificação</h3>
+                        <div class="calc-inputs">
+                            <div class="form-group">
+                                <label for="calcCustoBarril">Custo do barril (R$)</label>
+                                <input type="number" id="calcCustoBarril" class="input-control" step="0.01" min="0" placeholder="Ex: 350.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="calcCapacidade">Capacidade (litros)</label>
+                                <input type="number" id="calcCapacidade" class="input-control" step="0.1" min="0" placeholder="Ex: 30">
+                            </div>
+                            <div class="form-group">
+                                <label for="calcMarkup">Markup (%)</label>
+                                <input type="number" id="calcMarkup" class="input-control" step="0.1" min="0" placeholder="Ex: 200">
+                            </div>
+                        </div>
+                        <div class="calc-results">
+                            <div class="calc-result-card">
+                                <span class="calc-result-title">Copo 300ml</span>
+                                <span class="calc-result-value text-gold" id="calcPreco300">R$ 0,00</span>
+                                <span class="calc-result-sub">Lucro: <strong id="calcLucro300">R$ 0,00</strong></span>
+                            </div>
+                            <div class="calc-result-card">
+                                <span class="calc-result-title">Copo 500ml</span>
+                                <span class="calc-result-value text-gold" id="calcPreco500">R$ 0,00</span>
+                                <span class="calc-result-sub">Lucro: <strong id="calcLucro500">R$ 0,00</strong></span>
+                            </div>
+                            <div class="calc-result-card">
+                                <span class="calc-result-title">Growler 1L</span>
+                                <span class="calc-result-value text-gold" id="calcPreco1000">R$ 0,00</span>
+                                <span class="calc-result-sub">Lucro: <strong id="calcLucro1000">R$ 0,00</strong></span>
+                            </div>
+                            <div class="calc-result-card calc-result-wide">
+                                <span class="calc-result-title">Lucro estimado (barril cheio)</span>
+                                <span class="calc-result-value text-green" id="calcLucroBarril">R$ 0,00</span>
+                                <span class="calc-result-sub">Considerando venda em copos de 300ml</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tables Section -->
+                <div class="finance-tables-grid">
+                    <!-- Pagamentos -->
+                    <div class="table-section card">
+                        <h3 class="section-title"><i class="fa-solid fa-money-bill-transfer text-green"></i> Histórico de Pagamentos</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Valor</th>
+                                        <th>Método</th>
+                                        <th>Tipo</th>
+                                        <th>Data / Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pagamentosTableBody">
+                                    <tr>
+                                        <td colspan="5" class="table-empty">Carregando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Estornos -->
+                    <div class="table-section card">
+                        <h3 class="section-title"><i class="fa-solid fa-rotate-left text-gold"></i> Histórico de Estornos</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Valor</th>
+                                        <th>Torneira</th>
+                                        <th>Motivo</th>
+                                        <th>Data / Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="estornosTableBody">
+                                    <tr>
+                                        <td colspan="5" class="table-empty">Carregando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Modal Recarga -->
+    <div class="modal-overlay" id="modalRecarga">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Recarga de Saldo</h3>
+                <button class="btn-close-modal">&times;</button>
+            </div>
+            <form id="formRecargaModal">
+                <div class="modal-body">
+                    <div class="nfc-zone">
+                        <div class="nfc-icon-wrapper">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                        </div>
+                        <div class="nfc-text" id="recargaNfcStatus">Aproxime o cartão NFC...</div>
+                    </div>
+                    
+                    <div class="nfc-card-detected" id="recargaCardInfo">
+                        <p>Cliente: <strong id="recargaClienteNome">-</strong></p>
+                        <p>Saldo Atual: <strong id="recargaClienteSaldo">R$ 0,00</strong></p>
+                        <input type="hidden" id="recargaClienteId">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="valorRecargaInput">Valor da Recarga (R$)</label>
+                        <input type="number" id="valorRecargaInput" class="input-control" step="0.01" min="1" placeholder="Ex: 50.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-cancelar-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Recarga</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Cadastro Cliente -->
+    <div class="modal-overlay" id="modalCadastro">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Novo Cliente & Vínculo NFC</h3>
+                <button class="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="nfc-zone">
+                    <div class="nfc-icon-wrapper">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                    </div>
+                    <div class="nfc-text" id="cadastroNfcStatus">Aproxime o cartão NFC...</div>
+                </div>
+
+                <div id="cadastroPerfilInfo" style="display: none;" class="nfc-card-detected">
+                    <p>Cliente já cadastrado: <strong id="cadastroPerfilNome">-</strong></p>
+                    <p>Saldo atual: <strong id="cadastroPerfilSaldo">R$ 0,00</strong></p>
+                    <form id="formRecargaCadastro" style="margin-top: 0.8rem;">
+                        <input type="hidden" id="cadastroPerfilId">
+                        <input type="hidden" id="cadastroPerfilUid">
+                        <div class="form-group">
+                            <label for="valorRecargaCadastroInput">Recarga Rápida (R$)</label>
+                            <input type="number" id="valorRecargaCadastroInput" class="input-control" step="0.01" min="1" placeholder="Ex: 20.00" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Recarregar e Fechar</button>
+                    </form>
+                </div>
+
+                <form id="formCadastroModal" style="display: none;">
+                    <input type="hidden" id="cadastroNfcUid">
+                    <div class="form-group">
+                        <label for="nomeClienteInput">Nome Completo</label>
+                        <input type="text" id="nomeClienteInput" class="input-control" placeholder="Nome do cliente" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cpfClienteInput">CPF (opcional)</label>
+                        <input type="text" id="cpfClienteInput" class="input-control" placeholder="000.000.000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="telClienteInput">Telefone (opcional)</label>
+                        <input type="text" id="telClienteInput" class="input-control" placeholder="(00) 00000-0000">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem;">
+                        <button type="button" class="btn btn-secondary btn-cancelar-modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Cadastrar e Vincular</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/shared.js?v=2"></script>
+    <script src="/financeiro/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Gerenciamento de Torneiras</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <!-- Page Specific Styles -->
+    <link rel="stylesheet" href="/torneiras/style.css?v=2">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <img src="/your_beer_logo.png" alt="Your Beer Logo" class="brand-logo-img">
+                </div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item active"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+                <div class="menu-category">Simulação</div>
+                <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Gerenciamento de Torneiras</div>
+                <div class="topbar-actions">
+                    <div id="statusBadge" class="badge-status">
+                        <span class="status-dot"></span> Online
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body" style="padding: 0;">
+                <div class="torneiras-layout-grid">
+                    <!-- Coluna Principal -->
+                    <div class="main-column-container">
+                        <div class="section-header-row" style="margin-top: 0.5rem;">
+                            <h3 class="section-title"><i class="fa-solid fa-beer-mug-empty text-gold"></i> Torneiras Ativas</h3>
+                            <span class="section-subtitle">Vincule e configure os chopps servidos</span>
+                        </div>
+                        
+                        <div class="taps-manager-grid" id="tapsManagerGrid" style="margin-top: 1rem;">
+                            <!-- Dynamically loaded taps -->
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita Fixa de 280px (Notificações) -->
+                    <aside class="right-notification-column">
+                        <div class="notif-column-header">
+                            <h3>Notificações</h3>
+                        </div>
+                        <div class="notifications-list-container" id="notificationsList">
+                            <!-- Dynamically loaded notification cards -->
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Configurar Torneira -->
+    <div class="modal-overlay" id="modalVincular">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Configurar Torneira</h3>
+                <button class="btn-close-modal" onclick="fecharConfigTorneira()">&times;</button>
+            </div>
+            <form id="formVincularChopp">
+                <div class="modal-body">
+                    <input type="hidden" id="vincularTorneiraNumero">
+                    <p style="font-size: 0.9rem; margin-bottom: 1rem;">
+                        Configurando a <strong>Torneira #<span id="vincularTorneiraLabel">-</span></strong>
+                    </p>
+
+                    <div class="form-group">
+                        <label>Chopp atual (definido pelo barril)</label>
+                        <input type="text" id="configChoppAtual" class="input-control" readonly
+                            style="background-color: #0F0F0F; color: #FFFFFF; opacity: 0.85; cursor: not-allowed;">
+                    </div>
+
+                    <div style="background-color: rgba(255,255,255,0.02); padding: 0.8rem; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(251,191,36,0.08); margin-bottom: 0.8rem; color: var(--t3);">
+                        <i class="fa-solid fa-circle-info text-gold"></i>
+                        Para trocar o chopp desta torneira, monte um barril em <strong>Estoque</strong>.
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="vincularCopo300">Copo 300ml (R$) *</label>
+                            <input type="number" id="vincularCopo300" class="input-control" step="0.01" min="0" placeholder="0.00" required>
+                            <span id="sugestaoCopo300" style="display:block; font-size:0.72rem; color: var(--t3); margin-top:0.25rem;"></span>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="vincularCopo500">Copo 500ml (R$) *</label>
+                            <input type="number" id="vincularCopo500" class="input-control" step="0.01" min="0" placeholder="0.00" required>
+                            <span id="sugestaoCopo500" style="display:block; font-size:0.72rem; color: var(--t3); margin-top:0.25rem;"></span>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="vincularCopo1000">Growler 1L (R$) *</label>
+                            <input type="number" id="vincularCopo1000" class="input-control" step="0.01" min="0" placeholder="0.00" required>
+                            <span id="sugestaoCopo1000" style="display:block; font-size:0.72rem; color: var(--t3); margin-top:0.25rem;"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0; margin-top: 0.8rem;">
+                        <label for="vincularPrecoInput">Preço por Litro (R$) — opcional (auto-serviço)</label>
+                        <input type="number" id="vincularPrecoInput" class="input-control" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="fecharConfigTorneira()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Preços</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/shared.js?v=2"></script>
+    <script src="/torneiras/app.js"></script>
+</body>
+</html>

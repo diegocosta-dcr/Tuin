@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Estoque de Barris</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/shared.css">
+    <link rel="stylesheet" href="/estoque/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer" class="brand-logo-img"></div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/estoque/" class="menu-item active"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+                <div class="menu-category">Simulação</div>
+                <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Estoque de Barris</div>
+                <div class="topbar-actions">
+                    <button id="btnEntradaBarril" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Entrada de barril</button>
+                    <div id="statusBadge" class="badge-status"><span class="status-dot"></span> Online</div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- KPIs -->
+                <div class="estoque-kpis">
+                    <div class="card kpi-card">
+                        <div class="kpi-ic"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div><span class="kpi-lbl">Barris disponíveis</span><span class="kpi-val" id="kpiBarris">—</span></div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-ic"><i class="fa-solid fa-droplet"></i></div>
+                        <div><span class="kpi-lbl">Volume disponível</span><span class="kpi-val" id="kpiVolume">—</span></div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-ic"><i class="fa-solid fa-sack-dollar"></i></div>
+                        <div><span class="kpi-lbl">Valor em estoque</span><span class="kpi-val" id="kpiValor">—</span></div>
+                    </div>
+                    <div class="card kpi-card">
+                        <div class="kpi-ic"><i class="fa-solid fa-faucet"></i></div>
+                        <div><span class="kpi-lbl">Barris em uso</span><span class="kpi-val" id="kpiEmUso">—</span></div>
+                    </div>
+                </div>
+
+                <!-- Em uso (torneiras) -->
+                <div class="estoque-secao-titulo"><i class="fa-solid fa-faucet text-gold"></i> Barris em uso (nas torneiras)</div>
+                <div class="barris-grid" id="barrisEmUso"><div class="lista-vazia">Carregando...</div></div>
+
+                <!-- Em estoque -->
+                <div class="estoque-secao-titulo" style="margin-top:1.6rem;"><i class="fa-solid fa-boxes-stacked text-gold"></i> Em estoque (parados)</div>
+                <div class="barris-grid" id="barrisEstoque"><div class="lista-vazia">Carregando...</div></div>
+
+                <!-- Histórico de barris vazios (relatório de perda) -->
+                <div class="estoque-secao-titulo" style="margin-top:1.6rem;"><i class="fa-solid fa-clock-rotate-left text-gold"></i> Barris finalizados (relatório de perda)</div>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>Chopp</th><th>Marca</th><th>Capacidade</th><th>Vendido</th><th>Perda</th><th>% Perda</th><th>Custo</th><th>Finalizado</th></tr>
+                            </thead>
+                            <tbody id="barrisVaziosBody"><tr><td colspan="8" class="table-empty">Nenhum barril finalizado ainda.</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Entrada de Barril -->
+    <div class="modal-overlay" id="modalEntrada">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Entrada de Barril</h3>
+                <button class="btn-close-modal" id="btnFecharEntrada">&times;</button>
+            </div>
+            <form id="formEntrada">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="entradaChopp">Chopp *</label>
+                        <input type="text" id="entradaChopp" class="input-control" list="choppSugestoes" placeholder="Ex: Pilsen, IPA..." autocomplete="off" required>
+                        <datalist id="choppSugestoes"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaEstilo">Estilo (opcional)</label>
+                        <input type="text" id="entradaEstilo" class="input-control" placeholder="Ex: Lager, IPA, Weiss...">
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaMarca">Marca / Fornecedor</label>
+                        <input type="text" id="entradaMarca" class="input-control" list="marcaSugestoes" placeholder="Ex: Ambev, Heineken, cervejaria local..." autocomplete="off">
+                        <datalist id="marcaSugestoes"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaCapacidade">Capacidade (litros) *</label>
+                        <input type="number" id="entradaCapacidade" class="input-control" step="0.1" min="1" placeholder="Ex: 50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaPreco">Preço de custo do barril (R$)</label>
+                        <input type="number" id="entradaPreco" class="input-control" step="0.01" min="0" placeholder="Ex: 450.00">
+                    </div>
+
+                    <!-- Sugestão de preço ao vivo (calculadora) -->
+                    <div class="card" id="sugestaoPreco" style="margin-top:0.4rem; padding:0.9rem 1rem; display:none;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.6rem; font-weight:600;">
+                            <i class="fa-solid fa-calculator text-gold"></i> Sugestão de preço
+                            <span id="sugMarkup" style="font-weight:400; font-size:0.8rem; opacity:0.7;"></span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6rem 1rem; font-size:0.85rem;">
+                            <div>
+                                <div style="opacity:0.7;">Copo 300ml</div>
+                                <div style="font-weight:700; font-size:1.05rem;" id="sug300">R$ 0,00</div>
+                                <div style="opacity:0.7; font-size:0.78rem;">Lucro: <span id="sugLucro300">R$ 0,00</span></div>
+                            </div>
+                            <div>
+                                <div style="opacity:0.7;">Copo 500ml</div>
+                                <div style="font-weight:700; font-size:1.05rem;" id="sug500">R$ 0,00</div>
+                                <div style="opacity:0.7; font-size:0.78rem;">Lucro: <span id="sugLucro500">R$ 0,00</span></div>
+                            </div>
+                            <div>
+                                <div style="opacity:0.7;">Growler 1L</div>
+                                <div style="font-weight:700; font-size:1.05rem;" id="sug1000">R$ 0,00</div>
+                                <div style="opacity:0.7; font-size:0.78rem;">Lucro: <span id="sugLucro1000">R$ 0,00</span></div>
+                            </div>
+                        </div>
+                        <p style="margin:0.7rem 0 0; font-size:0.75rem; opacity:0.65;">
+                            <i class="fa-solid fa-circle-info"></i> Apenas sugestão. O preço final é configurado na torneira.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelarEntrada">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar ao estoque</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Montar Barril -->
+    <div class="modal-overlay" id="modalMontar">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Montar barril na torneira</h3>
+                <button class="btn-close-modal" id="btnFecharMontar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="montar-info" id="montarInfo">—</p>
+                <div class="form-group">
+                    <label for="montarTorneira">Torneira *</label>
+                    <select id="montarTorneira" class="input-control" required></select>
+                </div>
+                <p class="montar-aviso"><i class="fa-solid fa-circle-info"></i> Se a torneira já tiver um barril, ele volta ao estoque com o volume restante.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelarMontar">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarMontar"><i class="fa-solid fa-link"></i> Montar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="/shared.js"></script>
+    <script src="/estoque/app.js"></script>
+</body>
+</html>
