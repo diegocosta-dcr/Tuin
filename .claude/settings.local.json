@@ -75,7 +75,8 @@
       "Bash(git commit -q -m 'Sistema de comanda digital Your Beer — pronto para deploy \\(Postgres/Supabase + login\\) *)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "Bash(git commit -q -m 'Troca login do navegador \\(Basic Auth\\) por tela de login propria do sistema *)"
+      "Bash(git commit -q -m 'Troca login do navegador \\(Basic Auth\\) por tela de login propria do sistema *)",
+      "Bash(git commit -q -m 'Perfis de acesso \\(admin/atendente\\), gestao de usuarios e troca de senha *)"
     ]
   }
 }

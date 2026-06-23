@@ -478,8 +478,133 @@ async function enviarCadastro(e) {
     }
 }
 
+// ============================================================
+// CONTROLE DE ACESSO POR PERFIL (admin / atendente)
+// Ajusta o menu conforme o perfil e injeta usuário/sair/trocar senha.
+// ============================================================
+let __me = null;
+
+async function aplicarControleAcesso() {
+    try {
+        const r = await fetch('/api/me');
+        if (!r.ok) return; // sem login válido (o backend já redireciona quando preciso)
+        __me = await r.json();
+    } catch (e) { return; }
+    if (!__me) return;
+
+    const menu = document.querySelector('.sidebar .menu-section');
+
+    if (__me.perfil === 'atendente') {
+        // Esconde tudo que não for Atendimento/Caixa
+        document.querySelectorAll('.sidebar .menu-item').forEach(a => {
+            const href = a.getAttribute('href') || '';
+            if (!(href.startsWith('/atendente') || href.startsWith('/caixa'))) a.style.display = 'none';
+        });
+        document.querySelectorAll('.sidebar .menu-category').forEach(c => c.style.display = 'none');
+    } else if (__me.perfil === 'admin' && menu && !menu.querySelector('a[href="/usuarios/"]')) {
+        // Injeta o item "Usuários" para o admin
+        const cat = document.createElement('div');
+        cat.className = 'menu-category';
+        cat.textContent = 'Administração';
+        const a = document.createElement('a');
+        a.href = '/usuarios/';
+        a.className = 'menu-item';
+        a.innerHTML = '<i class="fa-solid fa-user-gear"></i> Usuários';
+        if (location.pathname.startsWith('/usuarios')) a.classList.add('active');
+        menu.appendChild(cat);
+        menu.appendChild(a);
+    }
+
+    // Rodapé com usuário logado + trocar senha + sair (só quando há login real)
+    if (!__me.semLogin) injetarRodapeUsuario(__me);
+}
+
+function injetarRodapeUsuario(me) {
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar || sidebar.querySelector('.user-footer')) return;
+    const rodape = document.createElement('div');
+    rodape.className = 'user-footer';
+    rodape.innerHTML = `
+        <div class="user-info">
+            <i class="fa-solid fa-circle-user"></i>
+            <div><span class="user-nome">${me.usuario}</span><span class="user-perfil">${me.perfil}</span></div>
+        </div>
+        <button type="button" class="btn-userf" onclick="abrirTrocarSenha()"><i class="fa-solid fa-key"></i> Trocar senha</button>
+        <button type="button" class="btn-userf sair" onclick="sairSistema()"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+    `;
+    sidebar.appendChild(rodape);
+}
+
+function sairSistema() {
+    fetch('/api/logout', { method: 'POST' }).finally(() => { window.location.href = '/login'; });
+}
+
+// ── Modal "Trocar senha" (injetado dinamicamente) ──
+function garantirModalTrocarSenha() {
+    if (document.getElementById('modalTrocarSenha')) return;
+    const div = document.createElement('div');
+    div.className = 'modal-overlay';
+    div.id = 'modalTrocarSenha';
+    div.innerHTML = `
+        <div class="modal-container" style="width:380px;">
+            <div class="modal-header">
+                <h3>Trocar minha senha</h3>
+                <button class="btn-close-modal" onclick="fecharTrocarSenha()">&times;</button>
+            </div>
+            <form id="formTrocarSenha">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="tsAtual">Senha atual</label>
+                        <input type="password" id="tsAtual" class="input-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tsNova">Nova senha</label>
+                        <input type="password" id="tsNova" class="input-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="fecharTrocarSenha()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(div);
+    div.querySelector('#formTrocarSenha').addEventListener('submit', submeterTrocarSenha);
+}
+
+function abrirTrocarSenha() {
+    garantirModalTrocarSenha();
+    document.getElementById('tsAtual').value = '';
+    document.getElementById('tsNova').value = '';
+    document.getElementById('modalTrocarSenha').classList.add('active');
+}
+function fecharTrocarSenha() {
+    const m = document.getElementById('modalTrocarSenha');
+    if (m) m.classList.remove('active');
+}
+async function submeterTrocarSenha(e) {
+    e.preventDefault();
+    const atual = document.getElementById('tsAtual').value;
+    const nova = document.getElementById('tsNova').value;
+    try {
+        const r = await fetch('/api/trocar-senha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ atual, nova })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || 'Erro ao trocar senha.');
+        showToast('Senha alterada com sucesso!', 'success');
+        fecharTrocarSenha();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
 // Document Ready Initialization
 document.addEventListener('DOMContentLoaded', () => {
+    aplicarControleAcesso();
     // Inject Theme Toggle Button if topbar-actions exists
     const topbarActions = document.querySelector('.topbar-actions');
     if (topbarActions && !document.getElementById('btnThemeToggle')) {

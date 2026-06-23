@@ -10,7 +10,9 @@ const {
   dbAll,
   isPg,
   isUniqueViolation,
-  filtroHoje
+  filtroHoje,
+  hashSenha,
+  verificaSenha
 } = require('./database');
 
 const app = express();
@@ -26,37 +28,70 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// LOGIN / SENHA DE ACESSO (tela própria do sistema, via cookie)
-// Só protege quando APP_SENHA estiver definida (ex: em produção/nuvem).
-// Localmente, sem APP_SENHA, o sistema continua aberto para testes.
+// LOGIN E PERFIS DE ACESSO (admin / atendente)
+// Só protege quando APP_SENHA estiver definida (produção). Local fica aberto.
 // ==========================================
+const crypto = require('crypto');
 const APP_SENHA = process.env.APP_SENHA;
 const APP_USUARIO = process.env.APP_USUARIO || 'admin';
+const SEGREDO = process.env.APP_SEGREDO || `${APP_USUARIO}:${APP_SENHA}:tuin-secret-v1`;
+
+const lerCookie = (req, nome) => {
+  const raw = req.headers.cookie || '';
+  const item = raw.split(';').map(s => s.trim()).find(s => s.startsWith(nome + '='));
+  return item ? decodeURIComponent(item.split('=').slice(1).join('=')) : null;
+};
+
+// Cookie assinado (HMAC) com {usuario, perfil, exp} — stateless, sobrevive a restart
+function assinarSessao(obj) {
+  const payload = Buffer.from(JSON.stringify(obj)).toString('base64url');
+  const sig = crypto.createHmac('sha256', SEGREDO).update(payload).digest('base64url');
+  return `${payload}.${sig}`;
+}
+function lerSessao(req) {
+  const token = lerCookie(req, 'tuin_auth');
+  if (!token || !token.includes('.')) return null;
+  const [payload, sig] = token.split('.');
+  const esperado = crypto.createHmac('sha256', SEGREDO).update(payload).digest('base64url');
+  if (sig !== esperado) return null;
+  try {
+    const obj = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (obj.exp && Date.now() > obj.exp) return null;
+    return obj;
+  } catch (e) { return null; }
+}
+
+// Quem é o usuário logado (ou admin implícito quando o sistema está sem senha)
+app.get('/api/me', (req, res) => {
+  if (!APP_SENHA) return res.json({ usuario: 'local', perfil: 'admin', semLogin: true });
+  const s = lerSessao(req);
+  if (!s) return res.status(401).json({ error: 'Não autenticado.' });
+  res.json({ usuario: s.usuario, perfil: s.perfil });
+});
+
 if (APP_SENHA) {
-  const crypto = require('crypto');
-  // Token determinístico (stateless): muda se usuário/senha mudarem.
-  const TOKEN = crypto.createHash('sha256').update(`${APP_USUARIO}:${APP_SENHA}:tuin`).digest('hex');
-
-  const lerCookie = (req, nome) => {
-    const raw = req.headers.cookie || '';
-    const item = raw.split(';').map(s => s.trim()).find(s => s.startsWith(nome + '='));
-    return item ? decodeURIComponent(item.split('=').slice(1).join('=')) : null;
-  };
-
-  // Página de login (própria do sistema)
   app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 
-  // Autenticação
-  app.post('/api/login', (req, res) => {
+  app.post('/api/login', async (req, res) => {
     const { usuario, senha } = req.body || {};
-    if (usuario === APP_USUARIO && senha === APP_SENHA) {
-      res.cookie('tuin_auth', TOKEN, {
-        httpOnly: true, sameSite: 'lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dias
-      });
-      return res.json({ ok: true });
+    if (!usuario || !senha) return res.status(400).json({ error: 'Informe usuário e senha.' });
+    try {
+      let perfil = null;
+      // Chave-mestra: as variáveis de ambiente sempre entram como admin (recuperação)
+      if (usuario === APP_USUARIO && senha === APP_SENHA) {
+        perfil = 'admin';
+      } else {
+        const u = await dbGet("SELECT * FROM usuarios WHERE usuario = ? AND status = 'ativo'", [usuario]);
+        if (u && verificaSenha(senha, u.senha)) perfil = u.perfil || 'atendente';
+      }
+      if (!perfil) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+      const maxAge = 30 * 24 * 60 * 60 * 1000;
+      const token = assinarSessao({ usuario, perfil, exp: Date.now() + maxAge });
+      res.cookie('tuin_auth', token, { httpOnly: true, sameSite: 'lax', maxAge });
+      res.json({ ok: true, usuario, perfil });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
-    return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
   });
 
   app.post('/api/logout', (req, res) => {
@@ -64,19 +99,105 @@ if (APP_SENHA) {
     res.json({ ok: true });
   });
 
-  // Proteção: libera o fluxo de login e os assets; exige cookie no resto.
+  // Rotas de API que o ATENDENTE NÃO pode acessar (apenas admin)
+  const apiBloqueadaAtendente = [
+    /^\/api\/financeiro/, /^\/api\/relatorios/, /^\/api\/barris/,
+    /^\/api\/estoque/, /^\/api\/movimentacoes-barril/, /^\/api\/chopps/,
+    /^\/api\/estornos/, /^\/api\/config/, /^\/api\/usuarios/, /^\/api\/teste/
+  ];
+
   app.use((req, res, next) => {
     const p = req.path;
-    if (p === '/login' || p === '/api/login' || p === '/api/logout') return next();
+    // Fluxo de login e assets: liberados
+    if (p === '/login' || p === '/api/login' || p === '/api/logout' || p === '/api/me') return next();
     if (/\.(css|js|png|jpe?g|svg|ico|gif|webp|woff2?|ttf|map)$/i.test(p)) return next();
-    if (lerCookie(req, 'tuin_auth') === TOKEN) return next();
-    if (p.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado.' });
-    return res.redirect('/login');
+
+    const s = lerSessao(req);
+    if (!s) {
+      if (p.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado.' });
+      return res.redirect('/login');
+    }
+    req.sessao = s;
+    if (s.perfil === 'admin') return next();
+
+    // ===== Perfil ATENDENTE: só Atendimento e Caixa =====
+    // Trocar a própria senha é sempre permitido
+    if (p === '/api/trocar-senha') return next();
+    if (p.startsWith('/api/')) {
+      if (apiBloqueadaAtendente.some(rx => rx.test(p))) {
+        return res.status(403).json({ error: 'Sem permissão.' });
+      }
+      if (/^\/api\/torneiras/.test(p) && req.method !== 'GET') {
+        return res.status(403).json({ error: 'Sem permissão.' });
+      }
+      return next(); // demais APIs (clientes, comanda, consumos, pagamentos, cartoes, torneiras GET)
+    }
+    // Páginas: só /atendente e /caixa
+    if (p.startsWith('/atendente') || p.startsWith('/caixa')) return next();
+    return res.redirect('/atendente/');
   });
-  console.log('🔒 Login por senha ATIVADO (tela própria).');
+
+  console.log('🔒 Login e perfis de acesso ATIVADOS.');
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ==========================================
+// GESTÃO DE USUÁRIOS (protegida pelo middleware: só admin em produção)
+// ==========================================
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const us = await dbAll('SELECT id, usuario, perfil, status, criado_em FROM usuarios ORDER BY criado_em DESC');
+    res.json(us);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/usuarios', async (req, res) => {
+  const { usuario, senha, perfil } = req.body || {};
+  if (!usuario || !senha) return res.status(400).json({ error: 'Usuário e senha são obrigatórios.' });
+  const perfilOk = perfil === 'admin' ? 'admin' : 'atendente';
+  try {
+    await dbRun('INSERT INTO usuarios (usuario, senha, perfil, status) VALUES (?, ?, ?, ?)',
+      [usuario.trim(), hashSenha(senha), perfilOk, 'ativo']);
+    res.status(201).json({ ok: true });
+  } catch (e) {
+    if (isUniqueViolation(e, 'usuario')) return res.status(400).json({ error: 'Já existe um usuário com esse nome.' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { perfil, status, senha } = req.body || {};
+  try {
+    if (perfil) await dbRun('UPDATE usuarios SET perfil = ? WHERE id = ?', [perfil === 'admin' ? 'admin' : 'atendente', id]);
+    if (status) await dbRun('UPDATE usuarios SET status = ? WHERE id = ?', [status, id]);
+    if (senha) await dbRun('UPDATE usuarios SET senha = ? WHERE id = ?', [hashSenha(senha), id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/usuarios/:id', async (req, res) => {
+  try {
+    await dbRun('DELETE FROM usuarios WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Trocar a própria senha (qualquer usuário logado)
+app.post('/api/trocar-senha', async (req, res) => {
+  const s = req.sessao || lerSessao(req);
+  if (!s) return res.status(401).json({ error: 'Não autenticado.' });
+  const { atual, nova } = req.body || {};
+  if (!nova) return res.status(400).json({ error: 'Informe a nova senha.' });
+  try {
+    const u = await dbGet('SELECT * FROM usuarios WHERE usuario = ?', [s.usuario]);
+    if (!u) return res.status(400).json({ error: 'Usuário não encontrado para troca de senha.' });
+    if (!verificaSenha(atual, u.senha)) return res.status(400).json({ error: 'Senha atual incorreta.' });
+    await dbRun('UPDATE usuarios SET senha = ? WHERE id = ?', [hashSenha(nova), u.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // Inicializa o Banco de Dados
 initDatabase().then(() => {

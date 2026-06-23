@@ -914,3 +914,32 @@ table tr:hover td { background: var(--table-hover); }
 .light-theme .btn-theme-toggle .theme-icon-dark {
   display: none;
 }
+
+/* ══════════════════════════════════════════
+   RODAPÉ DE USUÁRIO (perfil / trocar senha / sair)
+   ══════════════════════════════════════════ */
+.user-footer {
+  margin-top: auto;
+  padding: 0.8rem 0.75rem 1rem;
+  border-top: 1px solid var(--sidebar-border);
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.user-info {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.3rem 0.2rem 0.5rem;
+}
+.user-info > i { font-size: 1.6rem; color: var(--gold); }
+.user-info > div { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.user-nome { font-weight: 700; color: var(--t1); font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-perfil { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); opacity: 0.7; }
+.btn-userf {
+  display: flex; align-items: center; gap: 0.5rem;
+  width: 100%; padding: 0.5rem 0.7rem;
+  background: transparent; border: 1px solid var(--sidebar-border);
+  color: var(--t2); border-radius: 8px;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-userf:hover { background: var(--sidebar-hover); color: var(--t1); }
+.btn-userf.sair { color: var(--error); border-color: rgba(212,80,80,0.2); }
+.btn-userf.sair:hover { background: rgba(212,80,80,0.1); }

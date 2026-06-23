@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Usuários</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/shared.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer" class="brand-logo-img"></div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/" class="menu-item"><i class="fa-solid fa-chart-line"></i> Painel Gestão</a>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+                <div class="menu-category">Simulação</div>
+                <a href="/leitor/" class="menu-item"><i class="fa-solid fa-wifi"></i> Leitor NFC (teste)</a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Usuários & Acessos</div>
+                <div class="topbar-actions">
+                    <button id="btnNovoUsuario" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Novo usuário</button>
+                    <div id="statusBadge" class="badge-status"><span class="status-dot"></span> Online</div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="card" style="margin-bottom:1.2rem; padding:0.9rem 1.1rem; font-size:0.82rem; color:var(--t2); display:flex; gap:0.6rem; align-items:center;">
+                    <i class="fa-solid fa-circle-info text-gold"></i>
+                    <span><strong>Admin</strong> acessa tudo. <strong>Atendente</strong> acessa apenas Atendimento e Caixa.</span>
+                </div>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Perfil</th>
+                                    <th>Situação</th>
+                                    <th>Criado em</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuariosBody">
+                                <tr><td colspan="5" class="table-empty">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Novo Usuário -->
+    <div class="modal-overlay" id="modalNovoUsuario">
+        <div class="modal-container" style="width:400px;">
+            <div class="modal-header">
+                <h3>Novo usuário</h3>
+                <button class="btn-close-modal" id="btnFecharNovo">&times;</button>
+            </div>
+            <form id="formNovoUsuario">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="novoUsuario">Nome de usuário (login)</label>
+                        <input type="text" id="novoUsuario" class="input-control" placeholder="ex: joao" autocomplete="off" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="novoSenha">Senha</label>
+                        <input type="text" id="novoSenha" class="input-control" placeholder="senha de acesso" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="novoPerfil">Perfil de acesso</label>
+                        <select id="novoPerfil" class="input-control">
+                            <option value="atendente">Atendente (só Atendimento e Caixa)</option>
+                            <option value="admin">Admin (acesso total)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelarNovo">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Criar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Nova Senha -->
+    <div class="modal-overlay" id="modalNovaSenha">
+        <div class="modal-container" style="width:380px;">
+            <div class="modal-header">
+                <h3>Definir nova senha</h3>
+                <button class="btn-close-modal" id="btnFecharSenha">&times;</button>
+            </div>
+            <form id="formNovaSenha">
+                <div class="modal-body">
+                    <p style="font-size:0.85rem; color:var(--t2); margin-bottom:0.8rem;">Usuário: <strong id="senhaUsuarioNome">-</strong></p>
+                    <input type="hidden" id="senhaUsuarioId">
+                    <div class="form-group">
+                        <label for="senhaNovaValor">Nova senha</label>
+                        <input type="text" id="senhaNovaValor" class="input-control" placeholder="nova senha" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelarSenha">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="/shared.js"></script>
+    <script src="/usuarios/app.js"></script>
+</body>
+</html>

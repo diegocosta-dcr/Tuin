@@ -1,4 +1,24 @@
 const path = require('path');
+const crypto = require('crypto');
+
+// ============================================================
+// Hash de senha (scrypt + salt) — guarda "salt:hash"
+// ============================================================
+function hashSenha(senha) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(String(senha), salt, 32).toString('hex');
+  return `${salt}:${hash}`;
+}
+function verificaSenha(senha, armazenado) {
+  if (!armazenado || !armazenado.includes(':')) return false;
+  const [salt, hash] = armazenado.split(':');
+  const calc = crypto.scryptSync(String(senha), salt, 32).toString('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(calc, 'hex'));
+  } catch (e) {
+    return false;
+  }
+}
 
 // ============================================================
 // CAMADA DE BANCO — dois dialetos:
@@ -236,6 +256,18 @@ async function initDatabase() {
       )
     `);
 
+    // Usuários do sistema (perfis de acesso)
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id ${PK},
+        usuario TEXT UNIQUE NOT NULL,
+        senha TEXT NOT NULL,
+        perfil TEXT DEFAULT 'atendente',   -- admin | atendente
+        status TEXT DEFAULT 'ativo',
+        criado_em ${TS}
+      )
+    `);
+
     // ===== ESTOQUE DE BARRIS =====
     await dbRun(`
       CREATE TABLE IF NOT EXISTS barris (
@@ -318,6 +350,18 @@ async function initDatabase() {
     if (!tap5) {
       await dbRun('INSERT INTO torneiras (numero, chopp_nome, chopp_preco_litro, status) VALUES (?, ?, ?, ?)', [5, 'Torneira Livre', 0.00, 'inativa']);
     }
+
+    // Bootstrap do admin a partir das variáveis de ambiente (só em produção, com APP_SENHA)
+    const adminUsuario = process.env.APP_USUARIO || 'admin';
+    const adminSenha = process.env.APP_SENHA;
+    if (adminSenha) {
+      const existe = await dbGet('SELECT id FROM usuarios WHERE usuario = ?', [adminUsuario]);
+      if (!existe) {
+        await dbRun('INSERT INTO usuarios (usuario, senha, perfil, status) VALUES (?, ?, ?, ?)',
+          [adminUsuario, hashSenha(adminSenha), 'admin', 'ativo']);
+        console.log(`Usuário admin "${adminUsuario}" criado a partir das variáveis de ambiente.`);
+      }
+    }
   } catch (error) {
     console.error('Erro na inicialização do banco de dados:', error);
   }
@@ -330,5 +374,7 @@ module.exports = {
   initDatabase,
   isPg,
   isUniqueViolation,
-  filtroHoje
+  filtroHoje,
+  hashSenha,
+  verificaSenha
 };
