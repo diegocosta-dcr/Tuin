@@ -565,7 +565,7 @@ app.get('/api/relatorios/painel', async (req, res) => {
              COALESCE(SUM(co.valor),0) as valor_total
       FROM consumos co
       JOIN torneiras t ON co.torneira_id = t.id
-      GROUP BY t.id
+      GROUP BY t.id, t.numero, t.chopp_nome
       ORDER BY t.numero ASC
     `);
 
@@ -906,7 +906,7 @@ app.get('/api/comandas-abertas', async (req, res) => {
       FROM consumos co
       JOIN clientes c ON co.cliente_id = c.id
       WHERE co.status = 'aberto'
-      GROUP BY co.cliente_id
+      GROUP BY c.id, c.nome, c.cpf, c.telefone
       ORDER BY aberta_desde ASC
     `);
     res.json(lista);
