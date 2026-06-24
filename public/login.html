@@ -37,10 +37,14 @@
         .login-card .form-group { text-align: left; margin-bottom: 1rem; }
         .login-card label { margin-bottom: 0.35rem; display: block; }
         .input-icon { position: relative; }
-        .input-icon i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--t3); font-size: 0.85rem; }
+        /* Só o ícone à esquerda (cadeado/usuário) — filho DIRETO. Não pode pegar o <i> dentro do botão do olho. */
+        .input-icon > i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--t3); font-size: 0.85rem; pointer-events: none; }
         .input-icon .input-control { padding-left: 2.3rem; padding-right: 2.6rem; }
-        .pwd-olho-login { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--t3); cursor: pointer; font-size: 0.92rem; padding: 0.25rem; }
+        .pwd-olho-login { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--t3); cursor: pointer; font-size: 0.92rem; padding: 0.25rem; line-height: 1; display: flex; align-items: center; }
         .pwd-olho-login:hover { color: var(--gold); }
+        /* Esconde o "olho" nativo do Edge/Chrome para não duplicar com o nosso */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear { display: none; }
         .btn-entrar { width: 100%; margin-top: 0.6rem; padding: 0.8rem; font-size: 0.95rem; }
         .login-erro {
             display: none;
