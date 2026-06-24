@@ -78,7 +78,8 @@
       "Bash(git commit -q -m 'Troca login do navegador \\(Basic Auth\\) por tela de login propria do sistema *)",
       "Bash(git commit -q -m 'Perfis de acesso \\(admin/atendente\\), gestao de usuarios e troca de senha *)",
       "Bash(git commit -q -m 'Clientes: coluna Cartao com check, excluir cliente com confirmacao de seguranca *)",
-      "Bash(git commit -q -m 'Cadastro de cliente: CPF e telefone obrigatorios + mascaras automaticas *)"
+      "Bash(git commit -q -m 'Cadastro de cliente: CPF e telefone obrigatorios + mascaras automaticas *)",
+      "Bash(git commit -q -m 'Olhinho mostrar/ocultar senha + validacao real de CPF \\(digitos verificadores\\) *)"
     ]
   }
 }

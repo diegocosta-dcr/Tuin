@@ -61,6 +61,23 @@ function lerSessao(req) {
   } catch (e) { return null; }
 }
 
+// Valida CPF pelos dígitos verificadores
+function cpfValido(cpf) {
+  cpf = String(cpf || '').replace(/\D/g, '');
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(cpf[i], 10) * (10 - i);
+  let d1 = 11 - (soma % 11);
+  if (d1 >= 10) d1 = 0;
+  if (d1 !== parseInt(cpf[9], 10)) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(cpf[i], 10) * (11 - i);
+  let d2 = 11 - (soma % 11);
+  if (d2 >= 10) d2 = 0;
+  return d2 === parseInt(cpf[10], 10);
+}
+
 // Quem é o usuário logado (ou admin implícito quando o sistema está sem senha)
 app.get('/api/me', (req, res) => {
   if (!APP_SENHA) return res.json({ usuario: 'local', perfil: 'admin', semLogin: true });
@@ -228,8 +245,8 @@ app.post('/api/clientes', async (req, res) => {
   if (!nome) {
     return res.status(400).json({ error: 'Nome é obrigatório.' });
   }
-  if (!cpf || String(cpf).replace(/\D/g, '').length !== 11) {
-    return res.status(400).json({ error: 'CPF é obrigatório (11 dígitos).' });
+  if (!cpf || !cpfValido(cpf)) {
+    return res.status(400).json({ error: 'CPF inválido. Confira os números.' });
   }
   if (!telefone || String(telefone).replace(/\D/g, '').length < 10) {
     return res.status(400).json({ error: 'Telefone é obrigatório (com DDD).' });

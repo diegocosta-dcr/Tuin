@@ -156,6 +156,47 @@ function formatarTelefone(v) {
 }
 function soDigitos(v) { return (v || '').replace(/\D/g, ''); }
 
+// Valida CPF pelos dígitos verificadores (algoritmo oficial)
+function cpfValido(cpf) {
+    cpf = soDigitos(cpf);
+    if (cpf.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(cpf)) return false; // rejeita 000..., 111..., etc.
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(cpf[i], 10) * (10 - i);
+    let d1 = 11 - (soma % 11);
+    if (d1 >= 10) d1 = 0;
+    if (d1 !== parseInt(cpf[9], 10)) return false;
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(cpf[i], 10) * (11 - i);
+    let d2 = 11 - (soma % 11);
+    if (d2 >= 10) d2 = 0;
+    return d2 === parseInt(cpf[10], 10);
+}
+
+// Adiciona o "olhinho" (mostrar/ocultar) a um campo de senha
+function injetarOlho(input) {
+    if (!input || input.dataset.olho) return;
+    input.dataset.olho = '1';
+    const wrap = document.createElement('span');
+    wrap.className = 'pwd-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pwd-olho';
+    btn.tabIndex = -1;
+    btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+    btn.addEventListener('click', () => {
+        const mostrar = input.type === 'password';
+        input.type = mostrar ? 'text' : 'password';
+        btn.querySelector('i').className = mostrar ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    });
+    wrap.appendChild(btn);
+}
+function aplicarOlhos(scope) {
+    (scope || document).querySelectorAll('input[type="password"]').forEach(injetarOlho);
+}
+
 // Aplica máscara automática nos campos de CPF e telefone (por id, mesmo injetados dinamicamente)
 const CAMPOS_CPF = ['cpfClienteInput', 'editarClienteCpf'];
 const CAMPOS_TEL = ['telClienteInput', 'editarClienteTelefone'];
@@ -461,8 +502,8 @@ async function enviarCadastro(e) {
                 showToast('Nome é obrigatório.', 'error');
                 return;
             }
-            if (soDigitos(cpf).length !== 11) {
-                showToast('Informe um CPF válido (11 dígitos).', 'error');
+            if (!cpfValido(cpf)) {
+                showToast('CPF inválido. Confira os números.', 'error');
                 return;
             }
             if (soDigitos(telefone).length < 10) {
@@ -608,6 +649,7 @@ function garantirModalTrocarSenha() {
     `;
     document.body.appendChild(div);
     div.querySelector('#formTrocarSenha').addEventListener('submit', submeterTrocarSenha);
+    aplicarOlhos(div); // olhinho nos campos de senha
 }
 
 function abrirTrocarSenha() {
@@ -642,6 +684,7 @@ async function submeterTrocarSenha(e) {
 // Document Ready Initialization
 document.addEventListener('DOMContentLoaded', () => {
     aplicarControleAcesso();
+    aplicarOlhos(); // olhinho em todos os campos de senha
     // Inject Theme Toggle Button if topbar-actions exists
     const topbarActions = document.querySelector('.topbar-actions');
     if (topbarActions && !document.getElementById('btnThemeToggle')) {

@@ -36,7 +36,9 @@
         .login-card label { margin-bottom: 0.35rem; display: block; }
         .input-icon { position: relative; }
         .input-icon i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--t3); font-size: 0.85rem; }
-        .input-icon .input-control { padding-left: 2.3rem; }
+        .input-icon .input-control { padding-left: 2.3rem; padding-right: 2.6rem; }
+        .pwd-olho-login { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--t3); cursor: pointer; font-size: 0.92rem; padding: 0.25rem; }
+        .pwd-olho-login:hover { color: var(--gold); }
         .btn-entrar { width: 100%; margin-top: 0.6rem; padding: 0.8rem; font-size: 0.95rem; }
         .login-erro {
             display: none;
@@ -69,6 +71,7 @@
                 <div class="input-icon">
                     <i class="fa-solid fa-lock"></i>
                     <input type="password" id="senha" class="input-control" placeholder="sua senha" autocomplete="current-password" required>
+                    <button type="button" class="pwd-olho-login" id="btnOlho" onclick="togglePwdLogin()" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-entrar" id="btnEntrar">
@@ -78,6 +81,14 @@
     </div>
 
     <script>
+        function togglePwdLogin() {
+            const inp = document.getElementById('senha');
+            const ic = document.querySelector('#btnOlho i');
+            const mostrar = inp.type === 'password';
+            inp.type = mostrar ? 'text' : 'password';
+            ic.className = mostrar ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        }
+
         const form = document.getElementById('formLogin');
         const erro = document.getElementById('erroLogin');
         const btn = document.getElementById('btnEntrar');

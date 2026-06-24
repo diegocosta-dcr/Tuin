@@ -943,3 +943,13 @@ table tr:hover td { background: var(--table-hover); }
 .btn-userf:hover { background: var(--sidebar-hover); color: var(--t1); }
 .btn-userf.sair { color: var(--error); border-color: rgba(212,80,80,0.2); }
 .btn-userf.sair:hover { background: rgba(212,80,80,0.1); }
+
+/* Campo de senha com "olhinho" (mostrar/ocultar) */
+.pwd-wrap { position: relative; display: block; }
+.pwd-wrap > .input-control { padding-right: 2.6rem; width: 100%; }
+.pwd-olho {
+  position: absolute; right: 0.55rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--t3); cursor: pointer;
+  font-size: 0.92rem; padding: 0.25rem; line-height: 1;
+}
+.pwd-olho:hover { color: var(--gold); }
