@@ -595,17 +595,25 @@ async function aplicarControleAcesso() {
         });
         document.querySelectorAll('.sidebar .menu-category').forEach(c => c.style.display = 'none');
     } else if (__me.perfil === 'admin' && menu && !menu.querySelector('a[href="/usuarios/"]')) {
-        // Injeta o item "Usuários" para o admin
+        // Injeta a área de Administração para o admin: Configurações + Usuários
         const cat = document.createElement('div');
         cat.className = 'menu-category';
         cat.textContent = 'Administração';
-        const a = document.createElement('a');
-        a.href = '/usuarios/';
-        a.className = 'menu-item';
-        a.innerHTML = '<i class="fa-solid fa-user-gear"></i> Usuários';
-        if (location.pathname.startsWith('/usuarios')) a.classList.add('active');
         menu.appendChild(cat);
-        menu.appendChild(a);
+
+        const aConfig = document.createElement('a');
+        aConfig.href = '/configuracoes/';
+        aConfig.className = 'menu-item';
+        aConfig.innerHTML = '<i class="fa-solid fa-gear"></i> Configurações';
+        if (location.pathname.startsWith('/configuracoes')) aConfig.classList.add('active');
+        menu.appendChild(aConfig);
+
+        const aUsers = document.createElement('a');
+        aUsers.href = '/usuarios/';
+        aUsers.className = 'menu-item';
+        aUsers.innerHTML = '<i class="fa-solid fa-user-gear"></i> Usuários';
+        if (location.pathname.startsWith('/usuarios')) aUsers.classList.add('active');
+        menu.appendChild(aUsers);
     }
 
     // Rodapé com usuário logado + trocar senha + sair (só quando há login real)

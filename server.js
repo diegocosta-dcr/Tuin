@@ -165,6 +165,9 @@ if (APP_SENHA) {
   console.log('🔒 Login e perfis de acesso ATIVADOS.');
 }
 
+// Ao entrar, vai direto para o Atendimento (não há mais tela de Painel)
+app.get('/', (req, res) => res.redirect('/atendente/'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ==========================================
