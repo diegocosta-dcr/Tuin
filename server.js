@@ -228,6 +228,12 @@ app.post('/api/clientes', async (req, res) => {
   if (!nome) {
     return res.status(400).json({ error: 'Nome é obrigatório.' });
   }
+  if (!cpf || String(cpf).replace(/\D/g, '').length !== 11) {
+    return res.status(400).json({ error: 'CPF é obrigatório (11 dígitos).' });
+  }
+  if (!telefone || String(telefone).replace(/\D/g, '').length < 10) {
+    return res.status(400).json({ error: 'Telefone é obrigatório (com DDD).' });
+  }
   try {
     const result = await dbRun(
       'INSERT INTO clientes (nome, email, cpf, telefone, saldo) VALUES (?, ?, ?, ?, 0.0)',

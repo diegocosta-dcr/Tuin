@@ -137,6 +137,35 @@ function nomeTamanho(ml) {
     return m + 'ml';
 }
 
+// ── Máscaras de CPF e telefone ──
+function formatarCPF(v) {
+    v = (v || '').replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) return v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+    if (v.length > 6) return v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    if (v.length > 3) return v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    return v;
+}
+function formatarTelefone(v) {
+    // Celular: (XX) 9XXXX-XXXX (11 dígitos)
+    v = (v || '').replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10) return v.replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3');
+    if (v.length > 6) return v.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+    if (v.length > 2) return v.replace(/(\d{2})(\d{1,5})/, '($1) $2');
+    if (v.length > 0) return '(' + v;
+    return v;
+}
+function soDigitos(v) { return (v || '').replace(/\D/g, ''); }
+
+// Aplica máscara automática nos campos de CPF e telefone (por id, mesmo injetados dinamicamente)
+const CAMPOS_CPF = ['cpfClienteInput', 'editarClienteCpf'];
+const CAMPOS_TEL = ['telClienteInput', 'editarClienteTelefone'];
+document.addEventListener('input', (e) => {
+    const id = e.target && e.target.id;
+    if (!id) return;
+    if (CAMPOS_CPF.includes(id)) e.target.value = formatarCPF(e.target.value);
+    else if (CAMPOS_TEL.includes(id)) e.target.value = formatarTelefone(e.target.value);
+});
+
 // ============================================================
 // LEITOR NFC FÍSICO (tipo teclado / HID)
 // O leitor "digita" o código do cartão muito rápido e dá Enter.
@@ -427,12 +456,20 @@ async function enviarCadastro(e) {
             const cpf = document.getElementById('cpfClienteInput').value.trim();
             const telEl = document.getElementById('telClienteInput');
             const telefone = telEl ? telEl.value.trim() : '';
-            
+
             if (!nome) {
                 showToast('Nome é obrigatório.', 'error');
                 return;
             }
-            
+            if (soDigitos(cpf).length !== 11) {
+                showToast('Informe um CPF válido (11 dígitos).', 'error');
+                return;
+            }
+            if (soDigitos(telefone).length < 10) {
+                showToast('Informe um telefone válido com DDD.', 'error');
+                return;
+            }
+
             // 1. Cadastra o cliente
             const cliResponse = await fetch('/api/clientes', {
                 method: 'POST',
@@ -648,12 +685,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="nomeClienteInput" class="input-control" placeholder="Nome do cliente" required>
                 </div>
                 <div class="form-group">
-                    <label for="cpfClienteInput">CPF (opcional)</label>
-                    <input type="text" id="cpfClienteInput" class="input-control" placeholder="000.000.000-00">
+                    <label for="cpfClienteInput">CPF *</label>
+                    <input type="text" id="cpfClienteInput" class="input-control" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" required>
                 </div>
                 <div class="form-group">
-                    <label for="telClienteInput">Telefone (opcional)</label>
-                    <input type="text" id="telClienteInput" class="input-control" placeholder="(00) 00000-0000">
+                    <label for="telClienteInput">Telefone *</label>
+                    <input type="text" id="telClienteInput" class="input-control" placeholder="(00) 90000-0000" inputmode="numeric" maxlength="15" required>
                 </div>
             </div>
             
