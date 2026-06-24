@@ -232,59 +232,10 @@ async function confirmarPagamento() {
   }
 }
 
-// ── Configuração Custo 2ª Via ─────────────────────────────
-
-async function carregarConfigSegundaVia() {
-  const input = document.getElementById('inputSegundaViaValor');
-  if (!input) return;
-
-  try {
-    const resp = await fetch('/api/config/valor_segunda_via');
-    if (!resp.ok) throw new Error();
-    const data = await resp.json();
-    if (data && data.valor) {
-      input.value = parseFloat(data.valor).toFixed(2);
-    }
-  } catch (err) {
-    console.error('Erro ao carregar custo da 2ª via', err);
-  }
-}
-
-async function salvarConfigSegundaVia(e) {
-  if (e) e.preventDefault();
-  const input = document.getElementById('inputSegundaViaValor');
-  if (!input) return;
-
-  const valor = parseFloat(input.value);
-  if (isNaN(valor) || valor < 0) {
-    showToast('Insira um valor válido para a 2ª via.', 'error');
-    return;
-  }
-
-  try {
-    const resp = await fetch('/api/config/valor_segunda_via', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ valor: valor.toFixed(2) })
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Erro ao salvar configuração');
-
-    showToast('Custo da 2ª via atualizado!', 'success');
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
 // ── Inicialização ────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
   recarregarTudo();
-  carregarConfigSegundaVia();
-
-  // Salvar configuração da 2ª via
-  const formConfig = document.getElementById('formConfigSegundaVia');
-  if (formConfig) formConfig.addEventListener('submit', salvarConfigSegundaVia);
 
   // Atualizar manualmente
   const btnRec = document.getElementById('btnRecarregarLista');
