@@ -9,6 +9,21 @@
 // Global connection to Socket.io
 const socket = io();
 
+// Sessão expirada (401) → volta para a tela de login automaticamente
+const _fetchOriginal = window.fetch;
+window.fetch = async function (...args) {
+    const resp = await _fetchOriginal.apply(this, args);
+    try {
+        if (resp.status === 401) {
+            const url = String((args[0] && args[0].url) || args[0] || '');
+            if (!url.includes('/api/login') && !url.includes('/api/me') && !location.pathname.startsWith('/login')) {
+                window.location.href = '/login';
+            }
+        }
+    } catch (e) { /* ignora */ }
+    return resp;
+};
+
 // Theme Toggle Functionality
 function toggleTheme() {
     const isLight = document.documentElement.classList.toggle('light-theme');

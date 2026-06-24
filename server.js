@@ -35,6 +35,9 @@ const crypto = require('crypto');
 const APP_SENHA = process.env.APP_SENHA;
 const APP_USUARIO = process.env.APP_USUARIO || 'admin';
 const SEGREDO = process.env.APP_SEGREDO || `${APP_USUARIO}:${APP_SENHA}:tuin-secret-v1`;
+// Sessão expira por inatividade (minutos). Renova a cada ação; some ao fechar o navegador.
+const SESSAO_MIN = parseInt(process.env.APP_SESSAO_MIN, 10) || 20;
+const SESSAO_MS = SESSAO_MIN * 60 * 1000;
 
 const lerCookie = (req, nome) => {
   const raw = req.headers.cookie || '';
@@ -59,6 +62,12 @@ function lerSessao(req) {
     if (obj.exp && Date.now() > obj.exp) return null;
     return obj;
   } catch (e) { return null; }
+}
+// Emite o cookie de sessão: SEM maxAge (some ao fechar o navegador) e com
+// exp curto (inatividade). Renovado a cada requisição = "sliding session".
+function emitirSessao(res, usuario, perfil) {
+  const token = assinarSessao({ usuario, perfil, exp: Date.now() + SESSAO_MS });
+  res.cookie('tuin_auth', token, { httpOnly: true, sameSite: 'lax' });
 }
 
 // Valida CPF pelos dígitos verificadores
@@ -102,9 +111,7 @@ if (APP_SENHA) {
         if (u && verificaSenha(senha, u.senha)) perfil = u.perfil || 'atendente';
       }
       if (!perfil) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
-      const maxAge = 30 * 24 * 60 * 60 * 1000;
-      const token = assinarSessao({ usuario, perfil, exp: Date.now() + maxAge });
-      res.cookie('tuin_auth', token, { httpOnly: true, sameSite: 'lax', maxAge });
+      emitirSessao(res, usuario, perfil);
       res.json({ ok: true, usuario, perfil });
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -134,6 +141,7 @@ if (APP_SENHA) {
       if (p.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado.' });
       return res.redirect('/login');
     }
+    emitirSessao(res, s.usuario, s.perfil); // renova a janela de inatividade a cada ação
     req.sessao = s;
     if (s.perfil === 'admin') return next();
 
