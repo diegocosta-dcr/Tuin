@@ -280,6 +280,8 @@
   line-height: 1.35;
 }
 
+.cel-muted { color: var(--t3); font-size: 0.78rem; }
+
 /* ── Remover item da comanda (engano) ── */
 .cell-remover { text-align: center; width: 1%; white-space: nowrap; }
 .btn-remover-item {

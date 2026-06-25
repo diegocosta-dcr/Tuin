@@ -249,6 +249,36 @@ async function initDatabase() {
       )
     `);
 
+    // Catálogo de produtos avulsos (vinho, petiscos, comidas) — vendidos por unidade
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS produtos (
+        id ${PK},
+        nome TEXT NOT NULL,
+        categoria TEXT,
+        preco REAL NOT NULL,
+        status TEXT DEFAULT 'ativo',
+        criado_em ${TS}
+      )
+    `);
+
+    // Itens de produto lançados numa comanda (mesma lógica de status/pagamento dos consumos)
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS comanda_produtos (
+        id ${PK},
+        cliente_id INTEGER NOT NULL,
+        produto_id INTEGER,
+        nome TEXT NOT NULL,
+        categoria TEXT,
+        valor REAL NOT NULL,
+        status TEXT DEFAULT 'aberto',
+        pagamento_id INTEGER,
+        criado_em ${TS},
+        FOREIGN KEY(cliente_id) REFERENCES clientes(id),
+        FOREIGN KEY(produto_id) REFERENCES produtos(id),
+        FOREIGN KEY(pagamento_id) REFERENCES pagamentos(id)
+      )
+    `);
+
     await dbRun(`
       CREATE TABLE IF NOT EXISTS config (
         chave TEXT PRIMARY KEY,
@@ -349,6 +379,18 @@ async function initDatabase() {
     const tap5 = await dbGet('SELECT * FROM torneiras WHERE numero = 5');
     if (!tap5) {
       await dbRun('INSERT INTO torneiras (numero, chopp_nome, chopp_preco_litro, status) VALUES (?, ?, ?, ?)', [5, 'Torneira Livre', 0.00, 'inativa']);
+    }
+
+    // Produtos de exemplo (petiscos, vinho) — só na primeira vez
+    const countProdutos = await dbGet('SELECT COUNT(*) as count FROM produtos');
+    if (Number(countProdutos.count) === 0) {
+      await dbRun('INSERT INTO produtos (nome, categoria, preco) VALUES (?, ?, ?)', ['Amendoim', 'Petisco', 8.00]);
+      await dbRun('INSERT INTO produtos (nome, categoria, preco) VALUES (?, ?, ?)', ['Batata Frita', 'Petisco', 25.00]);
+      await dbRun('INSERT INTO produtos (nome, categoria, preco) VALUES (?, ?, ?)', ['Porção de Calabresa', 'Petisco', 32.00]);
+      await dbRun('INSERT INTO produtos (nome, categoria, preco) VALUES (?, ?, ?)', ['Taça de Vinho Tinto', 'Vinho', 18.00]);
+      await dbRun('INSERT INTO produtos (nome, categoria, preco) VALUES (?, ?, ?)', ['Taça de Vinho Branco', 'Vinho', 18.00]);
+      await dbRun('INSERT INTO produtos (nome, categoria, preco) VALUES (?, ?, ?)', ['Água', 'Bebida', 5.00]);
+      await dbRun('INSERT INTO produtos (nome, categoria, preco) VALUES (?, ?, ?)', ['Refrigerante', 'Bebida', 7.00]);
     }
 
     // Bootstrap do admin a partir das variáveis de ambiente (só em produção, com APP_SENHA)

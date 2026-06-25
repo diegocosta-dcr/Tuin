@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Beer - Produtos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/shared.css?v=2">
+    <link rel="stylesheet" href="/produtos/style.css?v=1">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="brand-logo"><img src="/your_beer_logo.png" alt="Your Beer" class="brand-logo-img"></div>
+                <div class="brand-sub">Comanda Digital</div>
+            </div>
+            <nav class="menu-section">
+                <div class="menu-category">Atendimento</div>
+                <a href="/atendente/" class="menu-item"><i class="fa-solid fa-mug-hot"></i> Atendimento</a>
+                <a href="/caixa/" class="menu-item"><i class="fa-solid fa-cash-register"></i> Caixa</a>
+                <div class="menu-category">Cadastros</div>
+                <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
+                <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/produtos/" class="menu-item active"><i class="fa-solid fa-utensils"></i> Produtos</a>
+                <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
+                <div class="menu-category">Gestão</div>
+                <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
+                <a href="/relatorios/" class="menu-item"><i class="fa-solid fa-chart-bar"></i> Relatórios</a>
+                <a href="/estornos/" class="menu-item"><i class="fa-solid fa-rotate-left"></i> Estornos</a>
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <header class="topbar">
+                <div class="page-title">Produtos</div>
+                <div class="topbar-actions">
+                    <button id="btnNovoProduto" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> Novo produto
+                    </button>
+                    <div id="statusBadge" class="badge-status">
+                        <span class="status-dot"></span> Online
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="prod-aviso">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Cadastre aqui vinhos, petiscos, comidas e bebidas. Eles viram <strong>botões rápidos</strong> no Atendimento. Para itens que mudam toda hora, use o botão <strong>"Item avulso"</strong> direto na comanda.</span>
+                </div>
+
+                <div class="card" style="margin-top: 1.2rem;">
+                    <h3 class="section-title"><i class="fa-solid fa-utensils text-gold"></i> Catálogo de produtos</h3>
+                    <div class="table-wrapper" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Preço</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="produtosTableBody">
+                                <tr><td colspan="5" class="table-empty">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Novo/Editar Produto -->
+    <div class="modal-overlay" id="modalProduto">
+        <div class="modal-container" style="width: 440px;">
+            <div class="modal-header">
+                <h3 id="modalProdutoTitulo">Novo produto</h3>
+                <button class="btn-close-modal" id="btnFecharModalProduto" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="produtoId">
+                <div class="form-group">
+                    <label for="produtoNome">Nome do produto</label>
+                    <input type="text" id="produtoNome" class="input-control" placeholder="Ex: Taça de Vinho Tinto" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="produtoCategoria">Categoria</label>
+                    <input type="text" id="produtoCategoria" class="input-control" list="categoriasList" placeholder="Ex: Petisco, Vinho, Bebida, Comida" autocomplete="off">
+                    <datalist id="categoriasList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="produtoPreco">Preço (R$)</label>
+                    <input type="number" id="produtoPreco" class="input-control" step="0.01" min="0" placeholder="Ex: 18,00">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelarProduto">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btnSalvarProduto">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal confirmar exclusão -->
+    <div class="modal-overlay" id="modalExcluir">
+        <div class="modal-container" style="width: 400px;">
+            <div class="modal-header">
+                <h3>Excluir produto</h3>
+                <button class="btn-close-modal" id="btnFecharModalExcluir" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--t2); line-height: 1.5;">
+                    Tem certeza que deseja excluir <strong id="excluirNome">este produto</strong> do catálogo?
+                    <br><small style="color: var(--t3);">Itens já lançados em comandas não são afetados.</small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelarExcluir">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarExcluir">
+                    <i class="fa-solid fa-trash-can"></i> Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/shared.js?v=2"></script>
+    <script src="/produtos/app.js?v=1"></script>
+</body>
+</html>

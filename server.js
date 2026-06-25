@@ -155,7 +155,12 @@ if (APP_SENHA) {
       if (/^\/api\/torneiras/.test(p) && req.method !== 'GET') {
         return res.status(403).json({ error: 'Sem permissão.' });
       }
-      return next(); // demais APIs (clientes, comanda, consumos, pagamentos, cartoes, torneiras GET)
+      // Catálogo de produtos: ver (GET) pode; cadastrar/editar/excluir só admin.
+      // /api/comanda-produtos (lançar item na comanda) NÃO é bloqueado — é operacional.
+      if (/^\/api\/produtos/.test(p) && req.method !== 'GET') {
+        return res.status(403).json({ error: 'Sem permissão.' });
+      }
+      return next(); // demais APIs (clientes, comanda, consumos, comanda-produtos, pagamentos, cartoes, torneiras GET)
     }
     // Páginas: só /atendente e /caixa
     if (p.startsWith('/atendente') || p.startsWith('/caixa')) return next();
@@ -790,11 +795,15 @@ app.get('/api/clientes/:id/recargas', async (req, res) => {
 
 // Helper: total em aberto de um cliente
 async function totalEmAberto(clienteId) {
-  const row = await dbGet(
+  const chopp = await dbGet(
     "SELECT COALESCE(SUM(valor), 0) as total FROM consumos WHERE cliente_id = ? AND status = 'aberto'",
     [clienteId]
   );
-  return row ? row.total : 0;
+  const prod = await dbGet(
+    "SELECT COALESCE(SUM(valor), 0) as total FROM comanda_produtos WHERE cliente_id = ? AND status = 'aberto'",
+    [clienteId]
+  );
+  return (Number(chopp && chopp.total) || 0) + (Number(prod && prod.total) || 0);
 }
 
 // Obter a comanda de um cliente (dados + itens em aberto + total devendo)
@@ -805,15 +814,31 @@ app.get('/api/comanda/:clienteId', async (req, res) => {
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado.' });
     }
-    const itens = await dbAll(`
+    const choppItens = await dbAll(`
       SELECT co.*, t.numero as torneira_numero
       FROM consumos co
       LEFT JOIN torneiras t ON co.torneira_id = t.id
       WHERE co.cliente_id = ? AND co.status = 'aberto'
       ORDER BY co.criado_em DESC
     `, [clienteId]);
-    // Histórico de chopps já consumidos (pagos) — para o atendente ver o que o cliente costuma beber
-    const historico = await dbAll(`
+    const prodItens = await dbAll(`
+      SELECT id, nome, categoria, valor, criado_em
+      FROM comanda_produtos
+      WHERE cliente_id = ? AND status = 'aberto'
+      ORDER BY criado_em DESC
+    `, [clienteId]);
+
+    // Itens unificados (chopp + produto) com 'tipo' para o front renderizar/remover
+    const itens = [
+      ...choppItens.map(it => ({ ...it, tipo: 'chopp' })),
+      ...prodItens.map(it => ({
+        id: it.id, tipo: 'produto', nome: it.nome, categoria: it.categoria,
+        chopp_nome: it.nome, valor: it.valor, criado_em: it.criado_em
+      }))
+    ].sort((a, b) => String(b.criado_em).localeCompare(String(a.criado_em)));
+
+    // Histórico de itens já consumidos (pagos) — chopp + produto
+    const choppHist = await dbAll(`
       SELECT co.*, t.numero as torneira_numero
       FROM consumos co
       LEFT JOIN torneiras t ON co.torneira_id = t.id
@@ -821,6 +846,16 @@ app.get('/api/comanda/:clienteId', async (req, res) => {
       ORDER BY co.criado_em DESC
       LIMIT 30
     `, [clienteId]);
+    const prodHist = await dbAll(`
+      SELECT id, nome, categoria, valor, criado_em FROM comanda_produtos
+      WHERE cliente_id = ? AND status = 'pago'
+      ORDER BY criado_em DESC LIMIT 30
+    `, [clienteId]);
+    const historico = [
+      ...choppHist.map(it => ({ ...it, tipo: 'chopp' })),
+      ...prodHist.map(it => ({ id: it.id, tipo: 'produto', nome: it.nome, categoria: it.categoria, chopp_nome: it.nome, valor: it.valor, criado_em: it.criado_em }))
+    ].sort((a, b) => String(b.criado_em).localeCompare(String(a.criado_em))).slice(0, 30);
+
     const total = await totalEmAberto(clienteId);
     const cartao = await dbGet('SELECT uid FROM cartoes_nfc WHERE cliente_id = ? LIMIT 1', [clienteId]);
     res.json({ cliente, itens, historico, total, cartao_uid: cartao ? cartao.uid : null });
@@ -908,17 +943,136 @@ app.delete('/api/consumos/:id', async (req, res) => {
   }
 });
 
+// ==========================================
+// PRODUTOS (catálogo: vinho, petiscos, comidas)
+// ==========================================
+
+// Listar produtos do catálogo (GET liberado p/ atendente montar os botões)
+app.get('/api/produtos', async (req, res) => {
+  try {
+    const somenteAtivos = req.query.ativos === '1';
+    const sql = somenteAtivos
+      ? "SELECT * FROM produtos WHERE status = 'ativo' ORDER BY categoria, nome"
+      : 'SELECT * FROM produtos ORDER BY categoria, nome';
+    res.json(await dbAll(sql));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Criar produto no catálogo (admin)
+app.post('/api/produtos', async (req, res) => {
+  const { nome, categoria, preco } = req.body || {};
+  if (!nome || preco === undefined || preco === null) {
+    return res.status(400).json({ error: 'Nome e preço são obrigatórios.' });
+  }
+  const precoNum = parseFloat(preco);
+  if (isNaN(precoNum) || precoNum < 0) return res.status(400).json({ error: 'Preço inválido.' });
+  try {
+    const r = await dbRun(
+      "INSERT INTO produtos (nome, categoria, preco, status) VALUES (?, ?, ?, 'ativo')",
+      [String(nome).trim(), categoria ? String(categoria).trim() : null, precoNum]
+    );
+    io.emit('produtos_atualizado');
+    res.status(201).json({ message: 'Produto cadastrado!', id: r.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Editar produto (admin)
+app.put('/api/produtos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, categoria, preco, status } = req.body || {};
+  try {
+    if (nome !== undefined) await dbRun('UPDATE produtos SET nome = ? WHERE id = ?', [String(nome).trim(), id]);
+    if (categoria !== undefined) await dbRun('UPDATE produtos SET categoria = ? WHERE id = ?', [categoria ? String(categoria).trim() : null, id]);
+    if (preco !== undefined && preco !== null && !isNaN(parseFloat(preco))) {
+      await dbRun('UPDATE produtos SET preco = ? WHERE id = ?', [parseFloat(preco), id]);
+    }
+    if (status) await dbRun('UPDATE produtos SET status = ? WHERE id = ?', [status === 'inativo' ? 'inativo' : 'ativo', id]);
+    io.emit('produtos_atualizado');
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Excluir produto do catálogo (admin) — não afeta itens já lançados (são desnormalizados)
+app.delete('/api/produtos/:id', async (req, res) => {
+  try {
+    await dbRun('DELETE FROM produtos WHERE id = ?', [req.params.id]);
+    io.emit('produtos_atualizado');
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Lançar um produto na comanda — por produto_id (catálogo) OU avulso (nome + preço digitados)
+app.post('/api/comanda-produtos', async (req, res) => {
+  const { cliente_id, produto_id, nome, preco } = req.body || {};
+  if (!cliente_id) return res.status(400).json({ error: 'Cliente é obrigatório.' });
+  try {
+    const cliente = await dbGet('SELECT id FROM clientes WHERE id = ?', [cliente_id]);
+    if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado.' });
+
+    let nomeItem, categoriaItem, valorItem, prodId = null;
+    if (produto_id) {
+      const p = await dbGet("SELECT * FROM produtos WHERE id = ? AND status = 'ativo'", [produto_id]);
+      if (!p) return res.status(404).json({ error: 'Produto não encontrado ou inativo.' });
+      nomeItem = p.nome; categoriaItem = p.categoria; valorItem = p.preco; prodId = p.id;
+    } else {
+      // Item avulso: nome + preço digitados na hora
+      if (!nome || preco === undefined || preco === null) {
+        return res.status(400).json({ error: 'Informe o nome e o preço do item avulso.' });
+      }
+      valorItem = parseFloat(preco);
+      if (isNaN(valorItem) || valorItem <= 0) return res.status(400).json({ error: 'Preço inválido.' });
+      nomeItem = String(nome).trim(); categoriaItem = 'Avulso';
+    }
+
+    await dbRun(
+      "INSERT INTO comanda_produtos (cliente_id, produto_id, nome, categoria, valor, status) VALUES (?, ?, ?, ?, ?, 'aberto')",
+      [cliente_id, prodId, nomeItem, categoriaItem, valorItem]
+    );
+
+    io.emit('comandas_atualizado');
+    io.emit('relatorios_atualizado');
+    res.status(201).json({ message: 'Item lançado!', valor: valorItem, total: await totalEmAberto(cliente_id) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Remover um produto lançado por engano (só se em aberto)
+app.delete('/api/comanda-produtos/:id', async (req, res) => {
+  try {
+    const item = await dbGet("SELECT * FROM comanda_produtos WHERE id = ? AND status = 'aberto'", [req.params.id]);
+    if (!item) return res.status(404).json({ error: 'Item não encontrado ou já pago.' });
+    await dbRun('DELETE FROM comanda_produtos WHERE id = ?', [req.params.id]);
+    io.emit('comandas_atualizado');
+    io.emit('relatorios_atualizado');
+    res.json({ message: 'Item removido.', total: await totalEmAberto(item.cliente_id) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Listar todas as comandas em aberto (clientes devendo) — para o Caixa e Dashboard
 app.get('/api/comandas-abertas', async (req, res) => {
   try {
     const lista = await dbAll(`
       SELECT c.id as cliente_id, c.nome, c.cpf, c.telefone,
-             COUNT(co.id) as qtd_itens,
-             SUM(co.valor) as total,
-             MIN(co.criado_em) as aberta_desde
-      FROM consumos co
-      JOIN clientes c ON co.cliente_id = c.id
-      WHERE co.status = 'aberto'
+             COUNT(x.valor) as qtd_itens,
+             SUM(x.valor) as total,
+             MIN(x.criado_em) as aberta_desde
+      FROM (
+        SELECT cliente_id, valor, criado_em FROM consumos WHERE status = 'aberto'
+        UNION ALL
+        SELECT cliente_id, valor, criado_em FROM comanda_produtos WHERE status = 'aberto'
+      ) x
+      JOIN clientes c ON x.cliente_id = c.id
       GROUP BY c.id, c.nome, c.cpf, c.telefone
       ORDER BY aberta_desde ASC
     `);
@@ -935,11 +1089,12 @@ app.post('/api/pagamentos', async (req, res) => {
     return res.status(400).json({ error: 'Cliente e método de pagamento são obrigatórios.' });
   }
   try {
-    const itens = await dbAll("SELECT * FROM consumos WHERE cliente_id = ? AND status = 'aberto'", [cliente_id]);
-    if (itens.length === 0) {
-      return res.status(400).json({ error: 'Não há consumos em aberto para este cliente.' });
+    const itens = await dbAll("SELECT valor FROM consumos WHERE cliente_id = ? AND status = 'aberto'", [cliente_id]);
+    const produtos = await dbAll("SELECT valor FROM comanda_produtos WHERE cliente_id = ? AND status = 'aberto'", [cliente_id]);
+    if (itens.length === 0 && produtos.length === 0) {
+      return res.status(400).json({ error: 'Não há itens em aberto para este cliente.' });
     }
-    const total = itens.reduce((acc, i) => acc + i.valor, 0);
+    const total = [...itens, ...produtos].reduce((acc, i) => acc + i.valor, 0);
 
     const pag = await dbRun(
       "INSERT INTO pagamentos (cliente_id, valor, metodo, tipo) VALUES (?, ?, ?, 'comanda')",
@@ -947,6 +1102,10 @@ app.post('/api/pagamentos', async (req, res) => {
     );
     await dbRun(
       "UPDATE consumos SET status = 'pago', pagamento_id = ? WHERE cliente_id = ? AND status = 'aberto'",
+      [pag.id, cliente_id]
+    );
+    await dbRun(
+      "UPDATE comanda_produtos SET status = 'pago', pagamento_id = ? WHERE cliente_id = ? AND status = 'aberto'",
       [pag.id, cliente_id]
     );
 

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/fa/css/all.min.css?v=6">
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="/shared.css?v=2">
-    <link rel="stylesheet" href="/atendente/style.css?v=2">
+    <link rel="stylesheet" href="/atendente/style.css?v=3">
 </head>
 <body>
     <div class="app-layout">
@@ -29,6 +29,7 @@
                 <div class="menu-category">Cadastros</div>
                 <a href="/clientes/" class="menu-item"><i class="fa-solid fa-users"></i> Clientes</a>
                 <a href="/torneiras/" class="menu-item"><i class="fa-solid fa-beer-mug-empty"></i> Torneiras</a>
+                <a href="/produtos/" class="menu-item"><i class="fa-solid fa-utensils"></i> Produtos</a>
                 <a href="/estoque/" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> Estoque</a>
                 <div class="menu-category">Gestão</div>
                 <a href="/financeiro/" class="menu-item"><i class="fa-solid fa-wallet"></i> Financeiro</a>
@@ -105,6 +106,26 @@
                     </div>
                 </div>
 
+                <!-- Produtos (vinho, petiscos, comidas) -->
+                <div class="comanda-secao">
+                    <div class="secao-titulo">
+                        <span><i class="fa-solid fa-utensils"></i> Lançar produto</span>
+                        <button type="button" class="btn-avulso" id="btnItemAvulso">
+                            <i class="fa-solid fa-plus"></i> Item avulso
+                        </button>
+                    </div>
+                    <!-- Form do item avulso (nome + preço digitados na hora) -->
+                    <div class="avulso-form" id="avulsoForm" style="display:none;">
+                        <input type="text" id="avulsoNome" class="input-control" placeholder="Nome do item (ex: Pastel de carne)" autocomplete="off">
+                        <input type="number" id="avulsoPreco" class="input-control avulso-preco" placeholder="Preço" step="0.01" min="0">
+                        <button type="button" class="btn btn-primary" id="btnAddAvulso" title="Lançar"><i class="fa-solid fa-check"></i></button>
+                        <button type="button" class="btn btn-secondary" id="btnCancelAvulso" title="Cancelar"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="produtos-grid" id="produtosGrid">
+                        <div class="lista-vazia">Carregando produtos...</div>
+                    </div>
+                </div>
+
                 <!-- Histórico de chopps já consumidos (pagos) -->
                 <div class="comanda-secao">
                     <div class="secao-titulo"><i class="fa-solid fa-clock-rotate-left"></i> Histórico de chopps</div>
@@ -127,6 +148,6 @@
 
     <!-- Scripts -->
     <script src="/shared.js?v=2"></script>
-    <script src="/atendente/app.js"></script>
+    <script src="/atendente/app.js?v=2"></script>
 </body>
 </html>

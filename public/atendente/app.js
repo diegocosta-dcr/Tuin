@@ -169,9 +169,11 @@ async function abrirComanda(clienteId) {
     torneirasGrid.innerHTML = '<div class="lista-vazia">Carregando torneiras...</div>';
     comandaTotal.textContent = 'R$ 0,00';
 
+    toggleAvulsoForm(false);
     await Promise.all([
         carregarComanda(clienteId),
-        carregarTorneiras()
+        carregarTorneiras(),
+        carregarProdutos()
     ]);
 }
 
@@ -224,15 +226,17 @@ function renderizarItens(itens) {
 
     comandaItens.innerHTML = '';
     itens.forEach(it => {
+        const ehProduto = it.tipo === 'produto';
+        const nome = ehProduto ? (it.nome || it.chopp_nome || 'Item') : (it.chopp_nome || 'Chopp');
+        const detalhe = ehProduto
+            ? `<i class="fa-solid fa-utensils"></i> ${escaparHtml(it.categoria || 'Produto')}`
+            : `<i class="fa-solid fa-faucet-drip"></i> Torneira ${escaparHtml(it.torneira_numero ?? '?')} · ${escaparHtml(nomeTamanho(it.tamanho_ml))}`;
         const linha = document.createElement('div');
         linha.className = 'item-linha';
         linha.innerHTML = `
             <div class="item-info">
-                <span class="item-nome">${escaparHtml(it.chopp_nome || 'Chopp')}</span>
-                <span class="item-detalhe">
-                    <i class="fa-solid fa-faucet-drip"></i> Torneira ${escaparHtml(it.torneira_numero ?? '?')}
-                    · ${escaparHtml(nomeTamanho(it.tamanho_ml))}
-                </span>
+                <span class="item-nome">${escaparHtml(nome)}</span>
+                <span class="item-detalhe">${detalhe}</span>
             </div>
             <div class="item-acoes">
                 <span class="item-valor">${formatarBRL(it.valor)}</span>
@@ -241,7 +245,7 @@ function renderizarItens(itens) {
                 </button>
             </div>
         `;
-        linha.querySelector('.btn-lixeira').addEventListener('click', () => removerItem(it.id));
+        linha.querySelector('.btn-lixeira').addEventListener('click', () => removerItem(it.id, it.tipo));
         comandaItens.appendChild(linha);
     });
 }
@@ -359,10 +363,11 @@ async function lancarConsumo(torneiraId, tamanhoMl, btn) {
     }
 }
 
-// Remove um item lançado por engano (só se em aberto)
-async function removerItem(itemId) {
+// Remove um item lançado por engano (só se em aberto). tipo: 'chopp' | 'produto'
+async function removerItem(itemId, tipo) {
+    const url = tipo === 'produto' ? `/api/comanda-produtos/${itemId}` : `/api/consumos/${itemId}`;
     try {
-        const res = await fetch(`/api/consumos/${itemId}`, { method: 'DELETE' });
+        const res = await fetch(url, { method: 'DELETE' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro ao remover item');
 
@@ -371,6 +376,113 @@ async function removerItem(itemId) {
     } catch (err) {
         showToast(err.message, 'error');
     }
+}
+
+// ════════════════════════════════════════════
+//  PRODUTOS (vinho, petiscos, comidas)
+// ════════════════════════════════════════════
+const produtosGrid = document.getElementById('produtosGrid');
+
+// Carrega o catálogo de produtos ativos e monta os botões (agrupados por categoria)
+async function carregarProdutos() {
+    try {
+        const res = await fetch('/api/produtos?ativos=1');
+        if (!res.ok) throw new Error('Erro ao carregar produtos');
+        const produtos = await res.json();
+
+        if (!produtos.length) {
+            produtosGrid.innerHTML = '<div class="lista-vazia">Nenhum produto cadastrado. Use "Item avulso" ou cadastre em Produtos.</div>';
+            return;
+        }
+
+        // Agrupa por categoria
+        const grupos = {};
+        produtos.forEach(p => {
+            const cat = p.categoria || 'Outros';
+            (grupos[cat] = grupos[cat] || []).push(p);
+        });
+
+        produtosGrid.innerHTML = '';
+        Object.keys(grupos).forEach(cat => {
+            const titulo = document.createElement('div');
+            titulo.className = 'produto-cat';
+            titulo.textContent = cat;
+            produtosGrid.appendChild(titulo);
+
+            const linha = document.createElement('div');
+            linha.className = 'produto-botoes';
+            grupos[cat].forEach(p => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-produto';
+                btn.innerHTML = `
+                    <span class="produto-nome">${escaparHtml(p.nome)}</span>
+                    <span class="produto-preco">${formatarBRL(p.preco)}</span>
+                `;
+                btn.addEventListener('click', () => lancarProduto(p.id, btn));
+                linha.appendChild(btn);
+            });
+            produtosGrid.appendChild(linha);
+        });
+    } catch (err) {
+        console.error(err);
+        produtosGrid.innerHTML = '<div class="lista-vazia">Erro ao carregar produtos.</div>';
+    }
+}
+
+// Lança um produto do catálogo na comanda
+async function lancarProduto(produtoId, btn) {
+    if (!clienteAtivoId) return;
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch('/api/comanda-produtos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cliente_id: clienteAtivoId, produto_id: produtoId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao lançar produto');
+        showToast(`Item lançado (${formatarBRL(data.valor)}).`, 'success');
+        await carregarComanda(clienteAtivoId);
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// Lança um item avulso (nome + preço digitados na hora)
+async function lancarAvulso() {
+    if (!clienteAtivoId) return;
+    const nomeEl = document.getElementById('avulsoNome');
+    const precoEl = document.getElementById('avulsoPreco');
+    const nome = (nomeEl.value || '').trim();
+    const preco = parseFloat(precoEl.value);
+    if (!nome) { showToast('Informe o nome do item.', 'error'); nomeEl.focus(); return; }
+    if (isNaN(preco) || preco <= 0) { showToast('Informe um preço válido.', 'error'); precoEl.focus(); return; }
+    try {
+        const res = await fetch('/api/comanda-produtos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cliente_id: clienteAtivoId, nome, preco })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao lançar item');
+        showToast(`${nome} lançado (${formatarBRL(data.valor)}).`, 'success');
+        nomeEl.value = ''; precoEl.value = '';
+        toggleAvulsoForm(false);
+        await carregarComanda(clienteAtivoId);
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// Mostra/esconde o form de item avulso
+function toggleAvulsoForm(mostrar) {
+    const form = document.getElementById('avulsoForm');
+    const visivel = mostrar === undefined ? form.style.display === 'none' : mostrar;
+    form.style.display = visivel ? '' : 'none';
+    if (visivel) document.getElementById('avulsoNome').focus();
 }
 
 // ════════════════════════════════════════════
@@ -387,6 +499,10 @@ socket.on('clientes_atualizado', () => {
 
 socket.on('torneiras_atualizado', () => {
     if (clienteAtivoId) carregarTorneiras();
+});
+
+socket.on('produtos_atualizado', () => {
+    if (clienteAtivoId) carregarProdutos();
 });
 
 // NFC opcional: ao aproximar cartão, abre a comanda do cliente correspondente
@@ -415,6 +531,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btnFecharComanda').addEventListener('click', fecharComanda);
     document.getElementById('btnFecharComandaRodape').addEventListener('click', fecharComanda);
+
+    // Item avulso
+    document.getElementById('btnItemAvulso').addEventListener('click', () => toggleAvulsoForm());
+    document.getElementById('btnCancelAvulso').addEventListener('click', () => toggleAvulsoForm(false));
+    document.getElementById('btnAddAvulso').addEventListener('click', lancarAvulso);
+    document.getElementById('avulsoPreco').addEventListener('keydown', (e) => { if (e.key === 'Enter') lancarAvulso(); });
 
     // Fechar clicando fora do container
     modalComanda.addEventListener('click', (e) => {

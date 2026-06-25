@@ -370,6 +370,72 @@
     cursor: not-allowed;
 }
 
+/* ── Produtos (vinho, petiscos, comidas) ── */
+.btn-avulso {
+    margin-left: auto;
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+    color: var(--gold);
+    font-size: 0.66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.35rem 0.7rem;
+    border-radius: 7px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.16s ease;
+}
+.btn-avulso:hover { background: var(--gold); color: var(--sidebar-active-text); border-color: var(--gold); }
+
+.avulso-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+    align-items: center;
+}
+.avulso-form .input-control { flex: 1; }
+.avulso-form .avulso-preco { max-width: 120px; flex: 0 0 auto; }
+.avulso-form .btn { padding: 0.55rem 0.75rem; flex-shrink: 0; }
+
+.produtos-grid { display: flex; flex-direction: column; gap: 0.55rem; }
+.produto-cat {
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--t3);
+    margin-top: 0.35rem;
+}
+.produto-botoes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+}
+.btn-produto {
+    background: var(--card-2);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 9px;
+    padding: 0.6rem 0.7rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    text-align: left;
+    transition: all 0.16s cubic-bezier(0.16,1,0.3,1);
+}
+.btn-produto:hover:not(:disabled) {
+    border-color: var(--gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(201,168,76,0.18);
+}
+.btn-produto:disabled { opacity: 0.5; cursor: not-allowed; }
+.produto-nome { font-size: 0.82rem; font-weight: 700; color: var(--t1); }
+.produto-preco { font-size: 0.84rem; font-weight: 800; color: var(--gold); }
+
 /* ── Responsivo ── */
 @media (max-width: 560px) {
     .total-aberto-valor { font-size: 1.7rem; }

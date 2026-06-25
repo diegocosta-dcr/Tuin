@@ -1,0 +1,74 @@
+/* ============================================================
+   TUIN Your Beer — Produtos (catálogo)
+   Reutiliza tokens e componentes do /shared.css.
+   ============================================================ */
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+/* Aviso explicativo no topo */
+.prod-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  border-radius: 11px;
+  padding: 0.85rem 1rem;
+  color: var(--t2);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.prod-aviso i { color: var(--gold); font-size: 1rem; margin-top: 0.15rem; flex-shrink: 0; }
+
+/* Coluna de preço */
+.col-preco { font-weight: 700; color: var(--gold); white-space: nowrap; }
+
+/* Badges de status */
+.badge-on, .badge-off {
+  display: inline-block;
+  padding: 0.18rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.badge-on {
+  background: rgba(95,170,110,0.12);
+  color: var(--accent-green, #5FAA6E);
+  border: 1px solid rgba(95,170,110,0.25);
+}
+.badge-off {
+  background: var(--card-2);
+  color: var(--t3);
+  border: 1px solid var(--sidebar-border);
+}
+.linha-inativa { opacity: 0.6; }
+
+/* Ações na tabela */
+.cell-acoes { text-align: right; white-space: nowrap; }
+.btn-icone {
+  background: var(--card-2);
+  border: 1px solid var(--sidebar-border);
+  color: var(--t2);
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-left: 0.35rem;
+  transition: all 0.15s ease;
+}
+.btn-icone:hover { border-color: var(--gold); color: var(--gold); }
+.btn-icone-danger:hover { border-color: var(--error); color: var(--error); background: rgba(212,80,80,0.08); }
+
+/* Botão excluir (perigo) — não existe no shared.css */
+.btn-danger {
+  background: var(--error);
+  border: 1px solid var(--error);
+  color: #fff;
+}
+.btn-danger:hover { filter: brightness(1.08); }

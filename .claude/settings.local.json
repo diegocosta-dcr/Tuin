@@ -86,7 +86,9 @@
       "Bash(git commit -q -m 'Corrige posicao do olho na tela de login \\(seletor pegava o icone do botao\\) + esconde olho nativo do navegador *)",
       "Bash(node -c public/caixa/app.js)",
       "Bash(git commit -q -m 'Caixa: ao fechar conta, atendente escolhe se o cartao fica com o cliente ou volta pro bar *)",
-      "Bash(git commit -q -m 'Caixa: remover item da comanda lancado por engano \\(devolve volume ao barril\\) *)"
+      "Bash(git commit -q -m 'Caixa: remover item da comanda lancado por engano \\(devolve volume ao barril\\) *)",
+      "Bash(perl -i -pe 's{/atendente/style\\\\.css\\\\?v=2}{/atendente/style.css?v=3}; s{<script src=\"/atendente/app\\\\.js\"></script>}{<script src=\"/atendente/app.js?v=2\"></script>}' public/atendente/index.html)",
+      "Bash(perl -i -pe 's{/caixa/style\\\\.css\\\\?v=4}{/caixa/style.css?v=5}; s{/caixa/app\\\\.js\\\\?v=3}{/caixa/app.js?v=4}' public/caixa/index.html)"
     ]
   }
 }

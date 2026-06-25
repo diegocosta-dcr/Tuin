@@ -199,18 +199,26 @@ async function carregarItensComanda(clienteId) {
   if (!itens.length) {
     body.innerHTML = '<tr><td colspan="5" class="table-empty">Sem itens em aberto.</td></tr>';
   } else {
-    body.innerHTML = itens.map(it => `
+    body.innerHTML = itens.map(it => {
+      const ehProduto = it.tipo === 'produto';
+      const nome = ehProduto ? (it.nome || it.chopp_nome) : it.chopp_nome;
+      const torn = ehProduto
+        ? `<span class="cel-muted">${escapeHtml(it.categoria || 'Produto')}</span>`
+        : `Nº ${escapeHtml(it.torneira_numero)}`;
+      const tam = ehProduto ? '<span class="cel-muted">—</span>' : escapeHtml(nomeTamanho(it.tamanho_ml));
+      return `
       <tr>
-        <td>${escapeHtml(it.chopp_nome)}</td>
-        <td>Nº ${escapeHtml(it.torneira_numero)}</td>
-        <td>${escapeHtml(nomeTamanho(it.tamanho_ml))}</td>
+        <td>${escapeHtml(nome)}</td>
+        <td>${torn}</td>
+        <td>${tam}</td>
         <td style="text-align:right;">${formatarMoeda(it.valor)}</td>
         <td class="cell-remover">
-          <button type="button" class="btn-remover-item" data-item-id="${it.id}" title="Remover item lançado por engano">
+          <button type="button" class="btn-remover-item" data-item-id="${it.id}" data-tipo="${it.tipo || 'chopp'}" title="Remover item lançado por engano">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }
   return itens;
 }
@@ -224,9 +232,10 @@ function desarmarRemover(btn) {
 
 // Remove um item lançado por engano (só se a comanda ainda estiver em aberto).
 // Devolve o volume ao barril (feito no backend).
-async function removerItemCaixa(itemId) {
+async function removerItemCaixa(itemId, tipo) {
+  const url = tipo === 'produto' ? `/api/comanda-produtos/${itemId}` : `/api/consumos/${itemId}`;
   try {
-    const res = await fetch(`/api/consumos/${itemId}`, { method: 'DELETE' });
+    const res = await fetch(url, { method: 'DELETE' });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Erro ao remover item');
 
@@ -339,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = e.target.closest('.btn-remover-item');
     if (!btn) return;
     if (btn.classList.contains('armado')) {
-      removerItemCaixa(btn.dataset.itemId);
+      removerItemCaixa(btn.dataset.itemId, btn.dataset.tipo);
       return;
     }
     // desarma qualquer outro botão armado e arma este
