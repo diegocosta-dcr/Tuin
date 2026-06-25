@@ -280,6 +280,34 @@
   line-height: 1.35;
 }
 
+/* ── Remover item da comanda (engano) ── */
+.cell-remover { text-align: center; width: 1%; white-space: nowrap; }
+.btn-remover-item {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--t3);
+  cursor: pointer;
+  border-radius: 7px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+.btn-remover-item:hover {
+  color: var(--error);
+  border-color: rgba(212,80,80,0.3);
+  background: rgba(212,80,80,0.08);
+}
+.btn-remover-item.armado {
+  color: #fff;
+  background: var(--error);
+  border-color: var(--error);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+}
+.btn-remover-item.armado i { margin-right: 0.25rem; }
+
 /* ── Badge de método na tabela de histórico ── */
 .badge-metodo {
   display: inline-flex;

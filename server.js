@@ -893,9 +893,11 @@ app.delete('/api/consumos/:id', async (req, res) => {
     const item = await dbGet("SELECT * FROM consumos WHERE id = ? AND status = 'aberto'", [id]);
     if (!item) return res.status(404).json({ error: 'Consumo não encontrado ou já pago.' });
     await dbRun('DELETE FROM consumos WHERE id = ?', [id]);
-    // Devolve o volume ao barril de origem (correção de lançamento)
+    // Devolve o volume ao barril de origem (correção de lançamento).
+    // Postgres: GREATEST (MAX é agregação); SQLite: MAX escalar.
     if (item.barril_id) {
-      await dbRun('UPDATE barris SET volume_vendido_ml = MAX(0, volume_vendido_ml - ?) WHERE id = ?', [item.tamanho_ml, item.barril_id]);
+      const clamp = isPg ? 'GREATEST' : 'MAX';
+      await dbRun(`UPDATE barris SET volume_vendido_ml = ${clamp}(0, volume_vendido_ml - ?) WHERE id = ?`, [item.tamanho_ml, item.barril_id]);
       io.emit('estoque_atualizado');
     }
     io.emit('comandas_atualizado');

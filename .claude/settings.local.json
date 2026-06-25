@@ -85,7 +85,8 @@
       "Bash(git commit -q -m 'Reorganiza paginas: Configuracoes em Administracao, Financeiro e Caixa sem repeticoes *)",
       "Bash(git commit -q -m 'Corrige posicao do olho na tela de login \\(seletor pegava o icone do botao\\) + esconde olho nativo do navegador *)",
       "Bash(node -c public/caixa/app.js)",
-      "Bash(git commit -q -m 'Caixa: ao fechar conta, atendente escolhe se o cartao fica com o cliente ou volta pro bar *)"
+      "Bash(git commit -q -m 'Caixa: ao fechar conta, atendente escolhe se o cartao fica com o cliente ou volta pro bar *)",
+      "Bash(git commit -q -m 'Caixa: remover item da comanda lancado por engano \\(devolve volume ao barril\\) *)"
     ]
   }
 }

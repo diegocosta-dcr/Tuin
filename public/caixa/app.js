@@ -159,44 +159,86 @@ async function abrirModalPagamento(clienteId, nome) {
   document.getElementById('pagClienteNome').innerText = nome || '-';
   document.getElementById('pagTotalValor').innerText = formatarMoeda(0);
   document.getElementById('pagItensBody').innerHTML =
-    '<tr><td colspan="4" class="table-empty">Carregando...</td></tr>';
+    '<tr><td colspan="5" class="table-empty">Carregando...</td></tr>';
 
   document.getElementById('modalPagamento').classList.add('active');
 
   // Busca os itens em aberto da comanda
   try {
-    const resp = await fetch(`/api/comanda/${clienteId}`);
-    if (!resp.ok) throw new Error('Falha ao carregar a comanda');
-    const data = await resp.json();
-
-    const itens = data.itens || [];
-    const total = Number(data.total) || 0;
-    comandaAtual.total = total;
-    comandaAtual.cartao_uid = data.cartao_uid || null;
-    if (data.cliente && data.cliente.nome) {
-      document.getElementById('pagClienteNome').innerText = data.cliente.nome;
-      comandaAtual.nome = data.cliente.nome;
-    }
-    document.getElementById('pagTotalValor').innerText = formatarMoeda(total);
-
-    // Só pergunta sobre o cartão se o cliente tiver um cartão vinculado
-    document.getElementById('pagCartaoDestino').style.display = comandaAtual.cartao_uid ? '' : 'none';
-
-    const body = document.getElementById('pagItensBody');
-    if (!itens.length) {
-      body.innerHTML = '<tr><td colspan="4" class="table-empty">Sem itens em aberto.</td></tr>';
-    } else {
-      body.innerHTML = itens.map(it => `
-        <tr>
-          <td>${escapeHtml(it.chopp_nome)}</td>
-          <td>Nº ${escapeHtml(it.torneira_numero)}</td>
-          <td>${it.tamanho_ml} ml</td>
-          <td style="text-align:right;">${formatarMoeda(it.valor)}</td>
-        </tr>`).join('');
-    }
+    await carregarItensComanda(clienteId);
   } catch (err) {
     document.getElementById('pagItensBody').innerHTML =
-      '<tr><td colspan="4" class="table-empty">Erro ao carregar itens.</td></tr>';
+      '<tr><td colspan="5" class="table-empty">Erro ao carregar itens.</td></tr>';
+    showToast(err.message, 'error');
+  }
+}
+
+// Busca a comanda e (re)desenha os itens, o total e o destino do cartão.
+// Reutilizado ao abrir o modal e após remover um item. Retorna a lista de itens.
+async function carregarItensComanda(clienteId) {
+  const resp = await fetch(`/api/comanda/${clienteId}`);
+  if (!resp.ok) throw new Error('Falha ao carregar a comanda');
+  const data = await resp.json();
+
+  const itens = data.itens || [];
+  const total = Number(data.total) || 0;
+  if (comandaAtual) {
+    comandaAtual.total = total;
+    comandaAtual.cartao_uid = data.cartao_uid || null;
+    if (data.cliente && data.cliente.nome) comandaAtual.nome = data.cliente.nome;
+  }
+  if (data.cliente && data.cliente.nome) {
+    document.getElementById('pagClienteNome').innerText = data.cliente.nome;
+  }
+  document.getElementById('pagTotalValor').innerText = formatarMoeda(total);
+
+  // Só pergunta sobre o cartão se o cliente tiver um cartão vinculado
+  document.getElementById('pagCartaoDestino').style.display = (data.cartao_uid) ? '' : 'none';
+
+  const body = document.getElementById('pagItensBody');
+  if (!itens.length) {
+    body.innerHTML = '<tr><td colspan="5" class="table-empty">Sem itens em aberto.</td></tr>';
+  } else {
+    body.innerHTML = itens.map(it => `
+      <tr>
+        <td>${escapeHtml(it.chopp_nome)}</td>
+        <td>Nº ${escapeHtml(it.torneira_numero)}</td>
+        <td>${escapeHtml(nomeTamanho(it.tamanho_ml))}</td>
+        <td style="text-align:right;">${formatarMoeda(it.valor)}</td>
+        <td class="cell-remover">
+          <button type="button" class="btn-remover-item" data-item-id="${it.id}" title="Remover item lançado por engano">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </td>
+      </tr>`).join('');
+  }
+  return itens;
+}
+
+// Desarma um botão de remover (volta ao ícone de lixeira)
+function desarmarRemover(btn) {
+  btn.classList.remove('armado');
+  btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+  if (btn._timer) { clearTimeout(btn._timer); btn._timer = null; }
+}
+
+// Remove um item lançado por engano (só se a comanda ainda estiver em aberto).
+// Devolve o volume ao barril (feito no backend).
+async function removerItemCaixa(itemId) {
+  try {
+    const res = await fetch(`/api/consumos/${itemId}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Erro ao remover item');
+
+    showToast('Item removido da comanda.', 'success');
+    const cid = comandaAtual ? comandaAtual.cliente_id : null;
+    const itens = cid ? await carregarItensComanda(cid) : [];
+    recarregarTudo(); // atualiza lista de comandas e KPIs ao fundo
+    if (!itens.length) {
+      showToast('Comanda sem itens — pagamento cancelado.', 'info');
+      fecharModalPagamento();
+    }
+  } catch (err) {
     showToast(err.message, 'error');
   }
 }
@@ -290,6 +332,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('destinoGrid').addEventListener('click', (e) => {
     const btn = e.target.closest('.destino-btn');
     if (btn) selecionarDestino(btn.dataset.devolver === 'true');
+  });
+
+  // Remover item da comanda (engano) — confirmação em 2 toques
+  document.getElementById('pagItensBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-remover-item');
+    if (!btn) return;
+    if (btn.classList.contains('armado')) {
+      removerItemCaixa(btn.dataset.itemId);
+      return;
+    }
+    // desarma qualquer outro botão armado e arma este
+    document.querySelectorAll('.btn-remover-item.armado').forEach(desarmarRemover);
+    btn.classList.add('armado');
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Remover';
+    btn._timer = setTimeout(() => desarmarRemover(btn), 3000);
   });
 
   // Fechar / cancelar modal
