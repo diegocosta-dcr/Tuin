@@ -17,7 +17,7 @@
     <!-- Shared Styles -->
     <link rel="stylesheet" href="/shared.css?v=2">
     <!-- Page Specific Styles -->
-    <link rel="stylesheet" href="/caixa/style.css?v=2">
+    <link rel="stylesheet" href="/caixa/style.css?v=3">
 </head>
 <body>
     <div class="app-layout">
@@ -183,6 +183,22 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Destino do cartão (só aparece se o cliente tiver cartão vinculado) -->
+                <div class="form-group" id="pagCartaoDestino" style="margin-top: 1.2rem; display: none;">
+                    <label>O cliente vai ficar com o cartão?</label>
+                    <div class="destino-grid" id="destinoGrid">
+                        <button type="button" class="destino-btn active" data-devolver="false">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Fica com o cliente</span>
+                        </button>
+                        <button type="button" class="destino-btn destino-volta" data-devolver="true">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Volta pro bar</span>
+                        </button>
+                    </div>
+                    <p class="destino-nota" id="destinoNota"></p>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="btnCancelarPagamento">Cancelar</button>
@@ -198,6 +214,6 @@
 
     <!-- Scripts -->
     <script src="/shared.js?v=2"></script>
-    <script src="/caixa/app.js"></script>
+    <script src="/caixa/app.js?v=2"></script>
 </body>
 </html>

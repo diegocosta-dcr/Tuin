@@ -83,7 +83,9 @@
       "Bash(git commit -q -m 'Corrige comandas-abertas no Postgres \\(GROUP BY com todas as colunas nao agregadas\\) *)",
       "Bash(git commit -q -m 'Sessao temporaria: expira ao fechar navegador e por inatividade \\(20min\\) *)",
       "Bash(git commit -q -m 'Reorganiza paginas: Configuracoes em Administracao, Financeiro e Caixa sem repeticoes *)",
-      "Bash(git commit -q -m 'Corrige posicao do olho na tela de login \\(seletor pegava o icone do botao\\) + esconde olho nativo do navegador *)"
+      "Bash(git commit -q -m 'Corrige posicao do olho na tela de login \\(seletor pegava o icone do botao\\) + esconde olho nativo do navegador *)",
+      "Bash(node -c public/caixa/app.js)",
+      "Bash(git commit -q -m 'Caixa: ao fechar conta, atendente escolhe se o cartao fica com o cliente ou volta pro bar *)"
     ]
   }
 }

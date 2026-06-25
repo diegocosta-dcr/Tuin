@@ -234,6 +234,52 @@
 }
 .metodo-btn.active i { color: var(--gold-light); }
 
+/* ── Destino do cartão (fica com o cliente / volta pro bar) ── */
+.destino-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+.destino-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.4rem;
+  border-radius: 11px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--t2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.destino-btn i { font-size: 1.2rem; color: var(--t3); transition: color 0.18s ease; }
+.destino-btn:hover { border-color: rgba(201,168,76,0.3); color: var(--t1); }
+.destino-btn.active {
+  border-color: var(--gold);
+  background: var(--gold-a12);
+  color: var(--gold-light);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+}
+.destino-btn.active i { color: var(--gold-light); }
+/* "Volta pro bar" ativo fica âmbar/alerta para sinalizar a ação destrutiva */
+.destino-btn.destino-volta.active {
+  border-color: var(--error);
+  background: rgba(212,80,80,0.12);
+  color: #E59A9A;
+  box-shadow: 0 0 0 3px rgba(212,80,80,0.1);
+}
+.destino-btn.destino-volta.active i { color: #E59A9A; }
+.destino-nota {
+  margin-top: 0.55rem;
+  font-size: 0.74rem;
+  color: var(--t3);
+  line-height: 1.35;
+}
+
 /* ── Badge de método na tabela de histórico ── */
 .badge-metodo {
   display: inline-flex;

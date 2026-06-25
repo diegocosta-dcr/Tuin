@@ -928,7 +928,7 @@ app.get('/api/comandas-abertas', async (req, res) => {
 
 // Receber pagamento (fecha a comanda do cliente)
 app.post('/api/pagamentos', async (req, res) => {
-  const { cliente_id, metodo } = req.body;
+  const { cliente_id, metodo, devolver_cartao } = req.body;
   if (!cliente_id || !metodo) {
     return res.status(400).json({ error: 'Cliente e método de pagamento são obrigatórios.' });
   }
@@ -948,10 +948,22 @@ app.post('/api/pagamentos', async (req, res) => {
       [pag.id, cliente_id]
     );
 
+    // Cartão volta pro estoque do bar: desvincula do cliente (ele continua cadastrado p/ histórico).
+    // O cartão fica disponível para ser entregue a outra pessoa.
+    let cartaoDevolvido = false;
+    if (devolver_cartao) {
+      const r = await dbRun(
+        "UPDATE cartoes_nfc SET cliente_id = NULL, status = 'estoque' WHERE cliente_id = ? AND status = 'ativo'",
+        [cliente_id]
+      );
+      cartaoDevolvido = !!(r && r.changes);
+      io.emit('cartoes_atualizado');
+    }
+
     io.emit('comandas_atualizado');
     io.emit('clientes_atualizado');
     io.emit('relatorios_atualizado');
-    res.json({ message: 'Pagamento recebido!', valor: total, pagamentoId: pag.id });
+    res.json({ message: 'Pagamento recebido!', valor: total, pagamentoId: pag.id, cartaoDevolvido });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

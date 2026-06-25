@@ -5,8 +5,9 @@
 // ============================================================
 
 // Estado do pagamento atualmente aberto no modal
-let comandaAtual = null;      // { cliente_id, nome, total }
+let comandaAtual = null;      // { cliente_id, nome, total, cartao_uid }
 let metodoSelecionado = 'PIX';
+let devolverCartao = false;   // true = cartão volta pro bar; false = fica com o cliente
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -149,9 +150,11 @@ function recarregarTudo() {
 // ── Modal de pagamento ───────────────────────────────────
 
 async function abrirModalPagamento(clienteId, nome) {
-  comandaAtual = { cliente_id: clienteId, nome: nome, total: 0 };
+  comandaAtual = { cliente_id: clienteId, nome: nome, total: 0, cartao_uid: null };
   metodoSelecionado = 'PIX';
   selecionarMetodo('PIX');
+  selecionarDestino(false);                 // padrão: cliente fica com o cartão
+  document.getElementById('pagCartaoDestino').style.display = 'none'; // esconde até saber se há cartão
 
   document.getElementById('pagClienteNome').innerText = nome || '-';
   document.getElementById('pagTotalValor').innerText = formatarMoeda(0);
@@ -169,11 +172,15 @@ async function abrirModalPagamento(clienteId, nome) {
     const itens = data.itens || [];
     const total = Number(data.total) || 0;
     comandaAtual.total = total;
+    comandaAtual.cartao_uid = data.cartao_uid || null;
     if (data.cliente && data.cliente.nome) {
       document.getElementById('pagClienteNome').innerText = data.cliente.nome;
       comandaAtual.nome = data.cliente.nome;
     }
     document.getElementById('pagTotalValor').innerText = formatarMoeda(total);
+
+    // Só pergunta sobre o cartão se o cliente tiver um cartão vinculado
+    document.getElementById('pagCartaoDestino').style.display = comandaAtual.cartao_uid ? '' : 'none';
 
     const body = document.getElementById('pagItensBody');
     if (!itens.length) {
@@ -206,6 +213,20 @@ function selecionarMetodo(metodo) {
   });
 }
 
+// Destino do cartão: false = fica com o cliente; true = volta pro bar
+function selecionarDestino(devolver) {
+  devolverCartao = !!devolver;
+  document.querySelectorAll('.destino-btn').forEach(btn => {
+    btn.classList.toggle('active', (btn.dataset.devolver === 'true') === devolverCartao);
+  });
+  const nota = document.getElementById('destinoNota');
+  if (nota) {
+    nota.textContent = devolverCartao
+      ? 'O cartão será desvinculado e volta pro estoque do bar. O cliente continua cadastrado.'
+      : 'O cliente leva o cartão e usa na próxima visita.';
+  }
+}
+
 // ── Confirmar pagamento ──────────────────────────────────
 
 async function confirmarPagamento() {
@@ -217,12 +238,19 @@ async function confirmarPagamento() {
     const resp = await fetch('/api/pagamentos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cliente_id: comandaAtual.cliente_id, metodo: metodoSelecionado })
+      body: JSON.stringify({
+        cliente_id: comandaAtual.cliente_id,
+        metodo: metodoSelecionado,
+        devolver_cartao: devolverCartao
+      })
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Erro ao registrar pagamento');
 
     showToast(`Pagamento de ${formatarMoeda(data.valor)} recebido via ${metodoSelecionado}.`, 'success');
+    if (data.cartaoDevolvido) {
+      showToast('Cartão devolvido ao bar. O cliente segue cadastrado.', 'info');
+    }
     fecharModalPagamento();
     recarregarTudo();
   } catch (err) {
@@ -256,6 +284,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('metodoGrid').addEventListener('click', (e) => {
     const btn = e.target.closest('.metodo-btn');
     if (btn) selecionarMetodo(btn.dataset.metodo);
+  });
+
+  // Botões de destino do cartão (fica com o cliente / volta pro bar)
+  document.getElementById('destinoGrid').addEventListener('click', (e) => {
+    const btn = e.target.closest('.destino-btn');
+    if (btn) selecionarDestino(btn.dataset.devolver === 'true');
   });
 
   // Fechar / cancelar modal
